@@ -780,10 +780,10 @@ from pyspark.sql import functions as F
     everyone_cohort_1=Input(rid="ri.foundry.main.dataset.292e6cad-ead9-45db-a9bf-ed7bdad78c94"),
     procedure_occurrence=Input(rid="ri.foundry.main.dataset.f6f0b5e0-a105-403a-a98f-0ee1c78137dc")
 )
-# everyone_procedures_of_interest (abff519b-bbe7-409e-b4da-86147fad95ab): v4
+# everyone_procedures_of_interest (abff519b-bbe7-409e-b4da-86147fad95ab): v6
 #Purpose - The purpose of this pipeline is to produce a day level and a persons level fact table for all patients in the N3C enclave.
 #Creator/Owner/contact - Andrea Zhou
-#Last Update - 12/7/22
+#Last Update - 9/4/24
 #Description - This nodes filter the source OMOP tables for rows that have a standard concept id associated with one of the concept sets described in the data dictionary in the README through the use of a fusion sheet.  Indicator names for these variables are assigned, and the indicators are collapsed to unique instances on the basis of patient and date.
 
 def everyone_procedures_of_interest(everyone_cohort_1, concept_set_members, procedure_occurrence, customized_concept_set_input_1):
@@ -801,13 +801,36 @@ def everyone_procedures_of_interest(everyone_cohort_1, concept_set_members, proc
     #filter fusion sheet for concept sets and their future variable names that have concepts in the procedure domain
     fusion_df = customized_concept_set_input_1 \
         .filter(customized_concept_set_input_1.domain.contains('procedure')) \
-        .select('concept_set_name','indicator_prefix')
+        .select('concept_set_name','codeset_id','indicator_prefix')
+
+    concept_members_df = concept_set_members
+
+    codeset_id = True
     #filter concept set members table to only concept ids for the procedures of interest
-    concepts_df = concept_set_members \
-        .select('concept_set_name', 'is_most_recent_version', 'concept_id') \
-        .where(F.col('is_most_recent_version')=='true') \
-        .join(fusion_df, 'concept_set_name', 'inner') \
-        .select('concept_id','indicator_prefix')
+    #prioritize codeset_id
+    if codeset_id == True:
+        #create concepts_df from codeset_id
+        concepts_df_id = concept_members_df \
+            .select('concept_id', 'codeset_id') \
+            .join(fusion_df, 'codeset_id', 'inner') \
+            .select('concept_id','indicator_prefix')
+
+        #create concepts_df from concept_set_name
+        concepts_df_name = concept_members_df \
+            .select('concept_set_name', 'is_most_recent_version', 'concept_id') \
+            .where((F.col('is_most_recent_version')=='true')) \
+            .join(fusion_df.where(F.col('codeset_id').isNull()), 'concept_set_name', 'inner') \
+            .select('concept_id','indicator_prefix')
+
+        concepts_df = concepts_df_name.join(concepts_df_id, ['concept_id', 'indicator_prefix'], 'outer')
+
+    #use only concept_set_name
+    else:
+        concepts_df = concept_members_df \
+            .select('concept_set_name', 'is_most_recent_version', 'concept_id') \
+            .where(F.col('is_most_recent_version')=='true') \
+            .join(fusion_df, 'concept_set_name', 'inner') \
+            .select('concept_id','indicator_prefix')
  
     #find procedure occurrence information based on matching concept ids for procedures of interest
     df = procedures_df.join(concepts_df, 'concept_id', 'inner')
