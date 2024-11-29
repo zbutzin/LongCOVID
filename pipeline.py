@@ -381,7 +381,7 @@ from pyspark.sql.types import IntegerType
 #Last Update - 12/7/22
 #Description - This node filters the condition_eras table for rows that have a condition_concept_id associated with one of the concept sets described in the data dictionary in the README through the use of a fusion sheet.  Indicator names for these conditions are assigned, and the indicators are collapsed to unique instances on the basis of patient and date.
 
-def everyone_conditions_of_interest(everyone_cohort_1, concept_set_members, condition_occurrence, ):
+def everyone_conditions_of_interest(everyone_cohort_1, concept_set_members, condition_occurrence, customized_concept_set_input_1):
 
     #bring in only cohort patient ids
     persons = everyone_cohort_1.select('person_id')
@@ -394,8 +394,8 @@ def everyone_conditions_of_interest(everyone_cohort_1, concept_set_members, cond
         .join(persons,'person_id','inner')
 
     #filter fusion sheet for concept sets and their future variable names that have concepts in the conditions domain
-    fusion_df =  \
-        .filter(.domain.contains('condition')) \
+    fusion_df = customized_concept_set_input_1 \
+        .filter(customized_concept_set_input_1.domain.contains('condition')) \
         .select('concept_set_name','indicator_prefix')
     #filter concept set members table to only concept ids for the conditions of interest
     concepts_df = concept_set_members \
@@ -641,7 +641,7 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - This nodes filter the source OMOP tables for rows that have a standard concept id associated with one of the concept sets described in the data dictionary in the README through the use of a fusion sheet.  Indicator names for these variables are assigned, and the indicators are collapsed to unique instances on the basis of patient and date.
 
-def everyone_observations_of_interest(observation, concept_set_members, everyone_cohort_1, ):
+def everyone_observations_of_interest(observation, concept_set_members, everyone_cohort_1, customized_concept_set_input_1):
    
     #bring in only cohort patient ids
     persons = everyone_cohort_1.select('person_id')
@@ -654,8 +654,8 @@ def everyone_observations_of_interest(observation, concept_set_members, everyone
         .join(persons,'person_id','inner')
 
     #filter fusion sheet for concept sets and their future variable names that have concepts in the observations domain
-    fusion_df =  \
-        .filter(.domain.contains('observation')) \
+    fusion_df = customized_concept_set_input_1 \
+        .filter(customized_concept_set_input_1.domain.contains('observation')) \
         .select('concept_set_name','indicator_prefix')
     #filter concept set members table to only concept ids for the observations of interest
     concepts_df = concept_set_members \
@@ -786,7 +786,7 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - This nodes filter the source OMOP tables for rows that have a standard concept id associated with one of the concept sets described in the data dictionary in the README through the use of a fusion sheet.  Indicator names for these variables are assigned, and the indicators are collapsed to unique instances on the basis of patient and date.
 
-def everyone_procedures_of_interest(everyone_cohort_1, concept_set_members, procedure_occurrence, ):
+def everyone_procedures_of_interest(everyone_cohort_1, concept_set_members, procedure_occurrence, customized_concept_set_input_1):
   
     #bring in only cohort patient ids
     persons = everyone_cohort_1.select('person_id')
@@ -799,8 +799,8 @@ def everyone_procedures_of_interest(everyone_cohort_1, concept_set_members, proc
         .join(persons,'person_id','inner')
 
     #filter fusion sheet for concept sets and their future variable names that have concepts in the procedure domain
-    fusion_df =  \
-        .filter(.domain.contains('procedure')) \
+    fusion_df = customized_concept_set_input_1 \
+        .filter(customized_concept_set_input_1.domain.contains('procedure')) \
         .select('concept_set_name','indicator_prefix')
     #filter concept set members table to only concept ids for the procedures of interest
     concepts_df = concept_set_members \
