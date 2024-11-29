@@ -24,29 +24,6 @@ def customized_concept_set_input(LL_concept_sets_fusion_everyone, LL_DO_NOT_DELE
 from pyspark.sql import functions as F
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.307cc50f-966a-4d91-8716-061bcb3af25d"),
-    LL_DO_NOT_DELETE_REQUIRED_concept_sets_all=Input(rid="ri.foundry.main.dataset.284f8923-c023-405c-ac1b-239e99b6d9a2"),
-    LL_concept_sets_fusion_everyone=Input(rid="ri.foundry.main.dataset.a6a7765f-9860-4341-9142-c3cbcc58853f")
-)
-# customized_concept_set_input (98658ea7-2622-4d42-9112-9796c11638ea): v3
-#The purpose of this node is to optimize the user's experience connecting a customized concept set "fusion sheet" input data frame to replace LL_concept_sets_fusion_everyone.
-
-def customized_concept_set_input_1(LL_concept_sets_fusion_everyone, LL_DO_NOT_DELETE_REQUIRED_concept_sets_all):
-
-    required = LL_DO_NOT_DELETE_REQUIRED_concept_sets_all
-    customizable = LL_concept_sets_fusion_everyone
-    
-    df = required.join(customizable, on = required.columns, how = 'outer')
-    
-    return df
-
-#################################################
-## Global imports and functions included below ##
-#################################################
-
-from pyspark.sql import functions as F
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
     location=Input(rid="ri.foundry.main.dataset.efac41e8-cc64-49bf-9007-d7e22a088318"),
