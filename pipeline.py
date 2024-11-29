@@ -77,6 +77,56 @@ def all_patients_fact_day_table_LDS(everyone_conditions_of_interest, everyone_me
 from pyspark.sql import functions as F
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.4561405a-3589-4e13-b1a6-392043771905"),
+    Sdoh_variables_all_patients=Input(rid="ri.foundry.main.dataset.0ba44b7c-2167-4845-a647-97decc41e41c")
+)
+# all_patients_summary_facts_table_LDS (de074cc9-0fda-4f1b-960d-b9961909fcca): v24
+#Purpose - The purpose of this pipeline is to produce a day level and a persons level fact table for all patients in the N3C enclave.
+#Creator/Owner/contact - Andrea Zhou
+#Last Update - 12/7/22
+#Description - The final step is to aggregate information to create a data frame that contains a single row of data for each patient in the cohort.  This node aggregates all information from the cohort_all_facts_table and summarizes each patient's facts in a single row.
+
+def all_patients_summary_fact_table_LDS(, , , Sdoh_variables_all_patients):
+
+    SDOH_vars = Sdoh_variables_all_patients #dataset not joined in, just referenced here so that it will import with template for easy access if user wants to join to their summary tables
+    
+    deaths_df = .select('person_id','patient_death')
+    df = .drop('patient_death_at_visit', 'during_macrovisit_hospitalization', 'macrovisit_start_date', 'macrovisit_end_date')
+  
+    df = df.groupby('person_id').agg(
+        F.max('BMI_rounded').alias('BMI_max_observed_or_calculated'),
+        *[F.max(col).alias(col + '_indicator') for col in df.columns if col not in ('person_id', 'BMI_rounded', 'date', 'had_vaccine_administered')],
+        F.sum('had_vaccine_administered').alias('total_number_of_COVID_vaccine_doses'))
+
+    #columns to indicate whether a patient belongs in confirmed or possible subcohorts
+    df = df.withColumn('confirmed_covid_patient', 
+        F.when((F.col('LL_COVID_diagnosis_indicator') == 1) | (F.col('PCR_AG_Pos_indicator') == 1), 1).otherwise(0))
+
+    df = df.withColumn('possible_covid_patient', 
+        F.when(F.col('confirmed_covid_patient') == 1, 0)
+        .when(F.col('Antibody_Pos_indicator') == 1, 1)
+        .when(F.col('LL_Long_COVID_diagnosis_indicator') == 1, 1)
+        .when(F.col('LL_Long_COVID_clinic_visit_indicator') == 1, 1)
+        .when(F.col('LL_PNEUMONIADUETOCOVID_indicator') == 1, 1)
+        .when(F.col('LL_MISC_indicator') == 1, 1)
+        .when(F.col('LL_SUSPECTEDCOVID19_indicator') == 1, 1)
+        .otherwise(0))      
+    
+    #join above tables on patient ID  
+    df = df.join(deaths_df, 'person_id', 'left').withColumnRenamed('patient_death', 'patient_death_indicator')
+    df = .join(df, 'person_id','left')
+    
+    df = df.na.fill(value=0, subset = [col for col in df.columns if col not in ('BMI_max_observed_or_calculated', 'postal_code', 'age')])
+    
+    return df
+        
+#################################################
+## Global imports and functions included below ##
+#################################################
+
+from pyspark.sql import functions as F
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.da40e627-9c72-416b-8cb6-8d13d6595dee"),
     LL_DO_NOT_DELETE_REQUIRED_concept_sets_all=Input(rid="ri.foundry.main.dataset.284f8923-c023-405c-ac1b-239e99b6d9a2"),
     LL_concept_sets_fusion_everyone=Input(rid="ri.foundry.main.dataset.a6a7765f-9860-4341-9142-c3cbcc58853f")
