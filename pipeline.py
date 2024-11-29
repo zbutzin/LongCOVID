@@ -2,6 +2,14 @@
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
+    everyone_conditions_of_interest=Input(rid="ri.foundry.main.dataset.09eea354-b653-43f0-a925-bcc783bd097e"),
+    everyone_devices_of_interest=Input(rid="ri.foundry.main.dataset.bd5969c3-8b84-4cae-a11c-2b3fdf027962"),
+    everyone_drugs_of_interest=Input(rid="ri.foundry.main.dataset.06da3b80-8298-4fb1-8db7-ee493c1fcfe5"),
+    everyone_measurements_of_interest=Input(rid="ri.foundry.main.dataset.446bdf2e-1215-4d89-bf87-e5339eac8a2b"),
+    everyone_observations_of_interest=Input(rid="ri.foundry.main.dataset.08da4c9c-b5d9-43ff-b638-76f1be5655bf"),
+    everyone_patient_deaths=Input(rid="ri.foundry.main.dataset.690683c2-7922-4862-8c8c-de0d81ccf9c6"),
+    everyone_procedures_of_interest=Input(rid="ri.foundry.main.dataset.435c973f-58e4-4beb-923a-9856c4149cfb"),
+    everyone_vaccines_of_interest=Input(rid="ri.foundry.main.dataset.7c845661-6eec-42aa-840f-27d1b73d1fdd"),
     microvisit_to_macrovisit_lds=Input(rid="ri.foundry.main.dataset.5af2c604-51e0-4afa-b1ae-1e5fa2f4b905")
 )
 # all_patients_fact_day_table_LDS (0e37c1db-d908-4351-880b-22c5887b02f1): v6
@@ -10,20 +18,20 @@
 #Last Update - 12/6/23
 #Description - All facts collected in the previous steps are combined in this cohort_all_facts_table on the basis of unique days for each patient. Indicators are created for the presence or absence of events, medications, conditions, measurements, device exposures, observations, procedures, and outcomes.  It also creates an indicator for whether the date where a fact was noted occurred during any hospitalization. This table is useful if the analyst needs to use actual dates of events as it provides more detail than the final patient-level table.  Use the max and min functions to find the first and last occurrences of any events.
 
-def all_patients_fact_day_table_LDS(, , , , , , , microvisit_to_macrovisit_lds, ):
+def all_patients_fact_day_table_LDS(everyone_conditions_of_interest, everyone_measurements_of_interest, everyone_procedures_of_interest, everyone_observations_of_interest, everyone_drugs_of_interest, everyone_patient_deaths, everyone_devices_of_interest, microvisit_to_macrovisit_lds, everyone_vaccines_of_interest):
 
     macrovisits_df = microvisit_to_macrovisit_lds
-    vaccines_df = 
-    procedures_df = 
-    devices_df = 
-    observations_df = 
-    conditions_df = 
-    drugs_df = 
-    measurements_df = 
-    deaths_df = .where(
-                (.date.isNotNull()) 
-                & (.date >= "2018-01-01") 
-                & (.date < (F.col('data_extraction_date')+(365*2)))) \
+    vaccines_df = everyone_vaccines_of_interest
+    procedures_df = everyone_procedures_of_interest
+    devices_df = everyone_devices_of_interest
+    observations_df = everyone_observations_of_interest
+    conditions_df = everyone_conditions_of_interest
+    drugs_df = everyone_drugs_of_interest
+    measurements_df = everyone_measurements_of_interest
+    deaths_df = everyone_patient_deaths.where(
+                (everyone_patient_deaths.date.isNotNull()) 
+                & (everyone_patient_deaths.date >= "2018-01-01") 
+                & (everyone_patient_deaths.date < (F.col('data_extraction_date')+(365*2)))) \
                 .withColumnRenamed('patient_death', 'patient_death_at_visit') \
                 .drop('data_extraction_date')
 
