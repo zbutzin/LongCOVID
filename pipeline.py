@@ -338,6 +338,7 @@ from pyspark.sql import functions as F
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.446bdf2e-1215-4d89-bf87-e5339eac8a2b"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
+    everyone_cohort=Input(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     measurement=Input(rid="ri.foundry.main.dataset.d6054221-ee0c-4858-97de-22292458fa19")
 )
 # everyone_measurements_of_interest (8a94c2ef-d733-4e49-a2ed-05cd9c040fb3): v6
@@ -346,10 +347,10 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - This node filters the measurements table for rows that have a measurement_concept_id associated with one of the concept sets described in the data dictionary in the README.  Indicator names for a positive COVID PCR or AG test, negative COVID PCR or AG test, positive COVID antibody test, and negative COVID antibody test are assigned, and the indicators are collapsed to unique instances on the basis of patient and date. It also finds the harmonized value as a number for BMI measurements and collapses these values to unique instances on the basis of patient and date.  Measurement BMI cutoffs included are intended for adults. Analyses focused on pediatric measurements should use different bounds for BMI measurements. 
 
-def everyone_measurements_of_interest(measurement, concept_set_members, ):
+def everyone_measurements_of_interest(measurement, concept_set_members, everyone_cohort):
     
     #bring in only cohort patient ids
-    persons = .select('person_id')
+    persons = everyone_cohort.select('person_id')
     #filter procedure occurrence table to only cohort patients    
     df = measurement \
         .select('person_id','measurement_date','measurement_concept_id','harmonized_value_as_number','value_as_concept_id') \
