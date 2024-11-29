@@ -497,6 +497,7 @@ from pyspark.sql import functions as F
     Output(rid="ri.foundry.main.dataset.690683c2-7922-4862-8c8c-de0d81ccf9c6"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
     death=Input(rid="ri.foundry.main.dataset.d8cc2ad4-215e-4b5d-bc80-80ffb3454875"),
+    everyone_cohort=Input(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     microvisit_to_macrovisit_lds=Input(rid="ri.foundry.main.dataset.5af2c604-51e0-4afa-b1ae-1e5fa2f4b905")
 )
 # everyone_patient_deaths (579dce2c-ecb4-4cb9-bbbe-16be6fd15c88): v6
@@ -505,9 +506,9 @@ from pyspark.sql import functions as F
 #Last Update - 12/6/23
 #Description - This node filters the visits table for rows that have a discharge_to_concept_id that corresponds with the DECEASED or HOSPICE concept sets and combines these records with the patients in the deaths table. Death dates are taken from the deaths table and from the visits table if the patient has a discharge_to_concept_id that corresponds with the DECEASED concept set. Death dates are prioritized such that we filter to only plausible death dates from the OMOP death table and take a min prior to adding in any additional plausible death dates from the OMOP visits table with concept id belonging to the DECEASED concept set and take a max for patients who do not already have a death date from the OMOP death table. No date is retained for patients who were discharged to hospice.
 
-def everyone_patient_deaths(death, microvisit_to_macrovisit_lds, concept_set_members, ):
+def everyone_patient_deaths(death, microvisit_to_macrovisit_lds, concept_set_members, everyone_cohort):
  
-    persons = .select('person_id', 'data_extraction_date')
+    persons = everyone_cohort.select('person_id', 'data_extraction_date')
     death_df = death \
         .select('person_id', 'death_date') \
         .distinct() \
