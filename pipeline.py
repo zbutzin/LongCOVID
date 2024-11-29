@@ -237,7 +237,9 @@ from pyspark.sql import functions as F
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.bd5969c3-8b84-4cae-a11c-2b3fdf027962"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
-    device_exposure=Input(rid="ri.foundry.main.dataset.d685db48-6583-43d6-8dc5-a9ebae1a827a")
+    customized_concept_set_input=Input(rid="ri.foundry.main.dataset.da40e627-9c72-416b-8cb6-8d13d6595dee"),
+    device_exposure=Input(rid="ri.foundry.main.dataset.d685db48-6583-43d6-8dc5-a9ebae1a827a"),
+    everyone_cohort=Input(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa")
 )
 # everyone_devices_of_interest (4d1a4b5f-2b99-4ca7-b476-dafc4f16ea37): v4
 #Purpose - The purpose of this pipeline is to produce a day level and a persons level fact table for all patients in the N3C enclave.
@@ -245,10 +247,10 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - This nodes filter the source OMOP tables for rows that have a standard concept id associated with one of the concept sets described in the data dictionary in the README through the use of a fusion sheet.  Indicator names for these variables are assigned, and the indicators are collapsed to unique instances on the basis of patient and date.
 
-def everyone_devices_of_interest(device_exposure, , concept_set_members, ):
+def everyone_devices_of_interest(device_exposure, everyone_cohort, concept_set_members, customized_concept_set_input):
 
     #bring in only cohort patient ids
-    persons = .select('person_id')
+    persons = everyone_cohort.select('person_id')
     #filter device exposure table to only cohort patients
     devices_df = device_exposure \
         .select('person_id','device_exposure_start_date','device_concept_id') \
@@ -258,8 +260,8 @@ def everyone_devices_of_interest(device_exposure, , concept_set_members, ):
         .join(persons,'person_id','inner')
 
     #filter fusion sheet for concept sets and their future variable names that have concepts in the devices domain
-    fusion_df =  \
-        .filter(.domain.contains('device')) \
+    fusion_df = customized_concept_set_input \
+        .filter(customized_concept_set_input.domain.contains('device')) \
         .select('concept_set_name','indicator_prefix')
     #filter concept set members table to only concept ids for the devices of interest
     concepts_df = concept_set_members \
