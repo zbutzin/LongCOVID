@@ -431,7 +431,7 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - This nodes filter the source OMOP tables for rows that have a standard concept id associated with one of the concept sets described in the data dictionary in the README through the use of a fusion sheet.  Indicator names for these variables are assigned, and the indicators are collapsed to unique instances on the basis of patient and date.
 
-def everyone_devices_of_interest(device_exposure, everyone_cohort_1, concept_set_members, ):
+def everyone_devices_of_interest(device_exposure, everyone_cohort_1, concept_set_members, customized_concept_set_input_1):
 
     #bring in only cohort patient ids
     persons = everyone_cohort_1.select('person_id')
@@ -444,8 +444,8 @@ def everyone_devices_of_interest(device_exposure, everyone_cohort_1, concept_set
         .join(persons,'person_id','inner')
 
     #filter fusion sheet for concept sets and their future variable names that have concepts in the devices domain
-    fusion_df =  \
-        .filter(.domain.contains('device')) \
+    fusion_df = customized_concept_set_input_1 \
+        .filter(customized_concept_set_input_1.domain.contains('device')) \
         .select('concept_set_name','indicator_prefix')
     #filter concept set members table to only concept ids for the devices of interest
     concepts_df = concept_set_members \
@@ -482,7 +482,7 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - This nodes filter the source OMOP tables for rows that have a standard concept id associated with one of the concept sets described in the data dictionary in the README through the use of a fusion sheet.  Indicator names for these variables are assigned, and the indicators are collapsed to unique instances on the basis of patient and date.
 
-def everyone_drugs_of_interest(concept_set_members, drug_exposure, everyone_cohort_1, ):
+def everyone_drugs_of_interest(concept_set_members, drug_exposure, everyone_cohort_1, customized_concept_set_input_1):
   
     #bring in only cohort patient ids
     persons = everyone_cohort_1.select('person_id')
@@ -495,8 +495,8 @@ def everyone_drugs_of_interest(concept_set_members, drug_exposure, everyone_coho
         .join(persons,'person_id','inner')
 
     #filter fusion sheet for concept sets and their future variable names that have concepts in the drug domain
-    fusion_df =  \
-        .filter(.domain.contains('drug')) \
+    fusion_df = customized_concept_set_input_1 \
+        .filter(customized_concept_set_input_1.domain.contains('drug')) \
         .select('concept_set_name','indicator_prefix')
     #filter concept set members table to only concept ids for the drugs of interest
     concepts_df = concept_set_members \
