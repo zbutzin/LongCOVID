@@ -1,6 +1,74 @@
 
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
+    microvisit_to_macrovisit_lds=Input(rid="ri.foundry.main.dataset.5af2c604-51e0-4afa-b1ae-1e5fa2f4b905")
+)
+# all_patients_fact_day_table_LDS (0e37c1db-d908-4351-880b-22c5887b02f1): v6
+#Purpose - The purpose of this pipeline is to produce a day level and a persons level fact table for all patients in the N3C enclave.
+#Creator/Owner/contact - Andrea Zhou
+#Last Update - 12/6/23
+#Description - All facts collected in the previous steps are combined in this cohort_all_facts_table on the basis of unique days for each patient. Indicators are created for the presence or absence of events, medications, conditions, measurements, device exposures, observations, procedures, and outcomes.  It also creates an indicator for whether the date where a fact was noted occurred during any hospitalization. This table is useful if the analyst needs to use actual dates of events as it provides more detail than the final patient-level table.  Use the max and min functions to find the first and last occurrences of any events.
+
+def all_patients_fact_day_table_LDS(, , , , , , , microvisit_to_macrovisit_lds, ):
+
+    macrovisits_df = microvisit_to_macrovisit_lds
+    vaccines_df = 
+    procedures_df = 
+    devices_df = 
+    observations_df = 
+    conditions_df = 
+    drugs_df = 
+    measurements_df = 
+    deaths_df = .where(
+                (.date.isNotNull()) 
+                & (.date >= "2018-01-01") 
+                & (.date < (F.col('data_extraction_date')+(365*2)))) \
+                .withColumnRenamed('patient_death', 'patient_death_at_visit') \
+                .drop('data_extraction_date')
+
+    df = macrovisits_df.select('person_id','visit_start_date').withColumnRenamed('visit_start_date','date')
+    df = df.join(vaccines_df, on=list(set(df.columns)&set(vaccines_df.columns)), how='outer')
+    df = df.join(procedures_df, on=list(set(df.columns)&set(procedures_df.columns)), how='outer')
+    df = df.join(devices_df, on=list(set(df.columns)&set(devices_df.columns)), how='outer')
+    df = df.join(observations_df, on=list(set(df.columns)&set(observations_df.columns)), how='outer')
+    df = df.join(conditions_df, on=list(set(df.columns)&set(conditions_df.columns)), how='outer')
+    df = df.join(drugs_df, on=list(set(df.columns)&set(drugs_df.columns)), how='outer')
+    df = df.join(measurements_df, on=list(set(df.columns)&set(measurements_df.columns)), how='outer')    
+    df = df.join(deaths_df, on=list(set(df.columns)&set(deaths_df.columns)), how='outer')
+    
+    df = df.na.fill(value=0, subset = [col for col in df.columns if col not in ('BMI_rounded')])
+   
+    #add F.max of all indicator columns to collapse all cross-domain flags to unique person and visit rows
+    #each date represents the date of the event or fact being noted in the patient's medical record
+    df = df.groupby('person_id', 'date').agg(*[F.max(col).alias(col) for col in df.columns if col not in ('person_id','date')])
+   
+    #create and join in flag that indicates whether the visit was during a macrovisit (1) or not (0)
+    #any conditions, observations, procedures, devices, drugs, measurements, and/or death flagged 
+    #with a (1) on that particular visit date would then be considered to have happened during a macrovisit    
+    macrovisits_df = macrovisits_df \
+        .select('person_id', 'macrovisit_start_date', 'macrovisit_end_date') \
+        .where(F.col('macrovisit_start_date').isNotNull() & F.col('macrovisit_end_date').isNotNull()) \
+        .distinct()
+    df_hosp = df.select('person_id', 'date').distinct() \
+        .join(macrovisits_df, on='person_id', how= 'outer')
+    df_hosp = df_hosp.withColumn('during_macrovisit_hospitalization', F.when(F.col('date').between(F.col('macrovisit_start_date'), F.col('macrovisit_end_date')), 1).otherwise(0)) \
+        .where(F.col('during_macrovisit_hospitalization') == 1) \
+        .dropDuplicates(['person_id', 'date'])
+    df = df.join(df_hosp, on=['person_id','date'], how="left")
+    
+    #final fill of null non-continuous variables with 0
+    df = df.na.fill(value=0, subset = [col for col in df.columns if col not in ('BMI_rounded')])
+
+    return df
+    
+#################################################
+## Global imports and functions included below ##
+#################################################
+
+from pyspark.sql import functions as F
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.da40e627-9c72-416b-8cb6-8d13d6595dee"),
     LL_DO_NOT_DELETE_REQUIRED_concept_sets_all=Input(rid="ri.foundry.main.dataset.284f8923-c023-405c-ac1b-239e99b6d9a2"),
     LL_concept_sets_fusion_everyone=Input(rid="ri.foundry.main.dataset.a6a7765f-9860-4341-9142-c3cbcc58853f")
