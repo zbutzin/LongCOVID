@@ -286,6 +286,8 @@ from pyspark.sql import functions as F
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.435c973f-58e4-4beb-923a-9856c4149cfb"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
+    customized_concept_set_input=Input(rid="ri.foundry.main.dataset.da40e627-9c72-416b-8cb6-8d13d6595dee"),
+    everyone_cohort=Input(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     procedure_occurrence=Input(rid="ri.foundry.main.dataset.f6f0b5e0-a105-403a-a98f-0ee1c78137dc")
 )
 # everyone_procedures_of_interest (abff519b-bbe7-409e-b4da-86147fad95ab): v4
@@ -294,10 +296,10 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - This nodes filter the source OMOP tables for rows that have a standard concept id associated with one of the concept sets described in the data dictionary in the README through the use of a fusion sheet.  Indicator names for these variables are assigned, and the indicators are collapsed to unique instances on the basis of patient and date.
 
-def everyone_procedures_of_interest(, concept_set_members, procedure_occurrence, ):
+def everyone_procedures_of_interest(everyone_cohort, concept_set_members, procedure_occurrence, customized_concept_set_input):
   
     #bring in only cohort patient ids
-    persons = .select('person_id')
+    persons = everyone_cohort.select('person_id')
     #filter procedure occurrence table to only cohort patients    
     procedures_df = procedure_occurrence \
         .select('person_id','procedure_date','procedure_concept_id') \
@@ -307,8 +309,8 @@ def everyone_procedures_of_interest(, concept_set_members, procedure_occurrence,
         .join(persons,'person_id','inner')
 
     #filter fusion sheet for concept sets and their future variable names that have concepts in the procedure domain
-    fusion_df =  \
-        .filter(.domain.contains('procedure')) \
+    fusion_df = customized_concept_set_input \
+        .filter(customized_concept_set_input.domain.contains('procedure')) \
         .select('concept_set_name','indicator_prefix')
     #filter concept set members table to only concept ids for the procedures of interest
     concepts_df = concept_set_members \
