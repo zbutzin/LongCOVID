@@ -237,6 +237,8 @@ from pyspark.sql import functions as F
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.08da4c9c-b5d9-43ff-b638-76f1be5655bf"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
+    customized_concept_set_input=Input(rid="ri.foundry.main.dataset.da40e627-9c72-416b-8cb6-8d13d6595dee"),
+    everyone_cohort=Input(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     observation=Input(rid="ri.foundry.main.dataset.b998b475-b229-471c-800e-9421491409f3")
 )
 # everyone_observations_of_interest (e53256c5-3a8b-4616-a4a5-9501076a6c1a): v5
@@ -245,10 +247,10 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - This nodes filter the source OMOP tables for rows that have a standard concept id associated with one of the concept sets described in the data dictionary in the README through the use of a fusion sheet.  Indicator names for these variables are assigned, and the indicators are collapsed to unique instances on the basis of patient and date.
 
-def everyone_observations_of_interest(observation, concept_set_members, , ):
+def everyone_observations_of_interest(observation, concept_set_members, everyone_cohort, customized_concept_set_input):
    
     #bring in only cohort patient ids
-    persons = .select('person_id')
+    persons = everyone_cohort.select('person_id')
     #filter observations table to only cohort patients    
     observations_df = observation \
         .select('person_id','observation_date','observation_concept_id') \
@@ -258,8 +260,8 @@ def everyone_observations_of_interest(observation, concept_set_members, , ):
         .join(persons,'person_id','inner')
 
     #filter fusion sheet for concept sets and their future variable names that have concepts in the observations domain
-    fusion_df =  \
-        .filter(.domain.contains('observation')) \
+    fusion_df = customized_concept_set_input \
+        .filter(customized_concept_set_input.domain.contains('observation')) \
         .select('concept_set_name','indicator_prefix')
     #filter concept set members table to only concept ids for the observations of interest
     concepts_df = concept_set_members \
