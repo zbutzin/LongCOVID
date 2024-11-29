@@ -235,6 +235,53 @@ def everyone_conditions_of_interest(everyone_cohort, concept_set_members, condit
 from pyspark.sql import functions as F
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.08da4c9c-b5d9-43ff-b638-76f1be5655bf"),
+    concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
+    observation=Input(rid="ri.foundry.main.dataset.b998b475-b229-471c-800e-9421491409f3")
+)
+# everyone_observations_of_interest (e53256c5-3a8b-4616-a4a5-9501076a6c1a): v5
+#Purpose - The purpose of this pipeline is to produce a day level and a persons level fact table for all patients in the N3C enclave.
+#Creator/Owner/contact - Andrea Zhou
+#Last Update - 12/7/22
+#Description - This nodes filter the source OMOP tables for rows that have a standard concept id associated with one of the concept sets described in the data dictionary in the README through the use of a fusion sheet.  Indicator names for these variables are assigned, and the indicators are collapsed to unique instances on the basis of patient and date.
+
+def everyone_observations_of_interest(observation, concept_set_members, , ):
+   
+    #bring in only cohort patient ids
+    persons = .select('person_id')
+    #filter observations table to only cohort patients    
+    observations_df = observation \
+        .select('person_id','observation_date','observation_concept_id') \
+        .where(F.col('observation_date').isNotNull()) \
+        .withColumnRenamed('observation_date','date') \
+        .withColumnRenamed('observation_concept_id','concept_id') \
+        .join(persons,'person_id','inner')
+
+    #filter fusion sheet for concept sets and their future variable names that have concepts in the observations domain
+    fusion_df =  \
+        .filter(.domain.contains('observation')) \
+        .select('concept_set_name','indicator_prefix')
+    #filter concept set members table to only concept ids for the observations of interest
+    concepts_df = concept_set_members \
+        .select('concept_set_name', 'is_most_recent_version', 'concept_id') \
+        .where(F.col('is_most_recent_version')=='true') \
+        .join(fusion_df, 'concept_set_name', 'inner') \
+        .select('concept_id','indicator_prefix')
+
+    #find observations information based on matching concept ids for observations of interest
+    df = observations_df.join(concepts_df, 'concept_id', 'inner')
+    #collapse to unique person and visit date and pivot on future variable name to create flag for rows associated with the concept sets for observations of interest    
+    df = df.groupby('person_id','date').pivot('indicator_prefix').agg(F.lit(1)).na.fill(0)
+
+    return df
+
+#################################################
+## Global imports and functions included below ##
+#################################################
+
+from pyspark.sql import functions as F
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.7c845661-6eec-42aa-840f-27d1b73d1fdd"),
     Vaccine_fact_lds=Input(rid="ri.foundry.main.dataset.7482e426-55a2-4a0b-9976-4cb3aa35788d"),
     everyone_cohort=Input(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa")
