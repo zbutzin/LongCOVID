@@ -770,8 +770,8 @@ from pyspark.sql import functions as F
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.0749644f-0249-4e14-bbb9-2db559a86aaf"),
-    Vaccine_fact_lds=Input(rid="ri.foundry.main.dataset.7482e426-55a2-4a0b-9976-4cb3aa35788d"),
-    everyone_cohort=Input(rid="ri.foundry.main.dataset.f819c71b-662f-4498-8963-714bd5415544")
+    everyone_cohort=Input(rid="ri.foundry.main.dataset.f819c71b-662f-4498-8963-714bd5415544"),
+    everyone_conditions_of_interest=Input(rid="ri.foundry.main.dataset.ec6b28cf-580a-418a-87da-9de2389ad16d")
 )
 # everyone_vaccines_of_interest (6ebcb216-3b16-4d7b-ad3e-bdde57ed0a24): v1
 #Purpose - The purpose of this pipeline is to produce a visit day level and a persons level fact table for all patients in the N3C enclave.
@@ -779,10 +779,10 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - This node converts the vaccine_fact dataset from columns of dates for each dose number to a simple flag for dates on which a vaccine dose was received by the patient. The indicator is collapsed to unique instances on the basis of patient and date.
 
-def everyone_vaccines_of_interest(Vaccine_fact_lds, everyone_cohort):
+def everyone_vaccines_of_interest(everyone_conditions_of_interest, everyone_cohort):
     
     persons = everyone_cohort.select('person_id')
-    vax_df = Vaccine_fact_lds.select('person_id', '1_vax_date', '2_vax_date', '3_vax_date', '4_vax_date') \
+    vax_df = everyone_conditions_of_interest.select('person_id', '1_vax_date', '2_vax_date', '3_vax_date', '4_vax_date') \
         .join(persons, 'person_id', 'inner')
 
     first_dose = vax_df.select('person_id', '1_vax_date') \
