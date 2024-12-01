@@ -140,15 +140,15 @@ def custom_concept_sets():
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.da40e627-9c72-416b-8cb6-8d13d6595dee"),
     LL_DO_NOT_DELETE_REQUIRED_concept_sets_all=Input(rid="ri.foundry.main.dataset.284f8923-c023-405c-ac1b-239e99b6d9a2"),
-    LL_concept_sets_fusion_everyone=Input(rid="ri.foundry.main.dataset.a6a7765f-9860-4341-9142-c3cbcc58853f")
+    custom_concept_sets=Input(rid="ri.foundry.main.dataset.f48c82e7-63e5-41dc-9a29-8f7a35eb92d8")
 )
 # customized_concept_set_input (98658ea7-2622-4d42-9112-9796c11638ea): v3
 #The purpose of this node is to optimize the user's experience connecting a customized concept set "fusion sheet" input data frame to replace LL_concept_sets_fusion_everyone.
 
-def customized_concept_set_input(LL_concept_sets_fusion_everyone, LL_DO_NOT_DELETE_REQUIRED_concept_sets_all):
+def customized_concept_set_input(custom_concept_sets, LL_DO_NOT_DELETE_REQUIRED_concept_sets_all):
 
     required = LL_DO_NOT_DELETE_REQUIRED_concept_sets_all
-    customizable = LL_concept_sets_fusion_everyone
+    customizable = custom_concept_sets
     
     df = required.join(customizable, on = required.columns, how = 'outer')
     
