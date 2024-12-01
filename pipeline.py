@@ -78,7 +78,10 @@ from pyspark.sql import functions as F
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.4561405a-3589-4e13-b1a6-392043771905"),
-    Sdoh_variables_all_patients=Input(rid="ri.foundry.main.dataset.0ba44b7c-2167-4845-a647-97decc41e41c")
+    Sdoh_variables_all_patients=Input(rid="ri.foundry.main.dataset.0ba44b7c-2167-4845-a647-97decc41e41c"),
+    all_patients_fact_day_table_LDS=Input(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
+    everyone_cohort=Input(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
+    everyone_patient_deaths=Input(rid="ri.foundry.main.dataset.690683c2-7922-4862-8c8c-de0d81ccf9c6")
 )
 # all_patients_summary_facts_table_LDS (de074cc9-0fda-4f1b-960d-b9961909fcca): v24
 #Purpose - The purpose of this pipeline is to produce a day level and a persons level fact table for all patients in the N3C enclave.
@@ -86,12 +89,12 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - The final step is to aggregate information to create a data frame that contains a single row of data for each patient in the cohort.  This node aggregates all information from the cohort_all_facts_table and summarizes each patient's facts in a single row.
 
-def all_patients_summary_fact_table_LDS(, , , Sdoh_variables_all_patients):
+def all_patients_summary_fact_table_LDS(all_patients_fact_day_table_LDS, everyone_cohort, everyone_patient_deaths, Sdoh_variables_all_patients):
 
     SDOH_vars = Sdoh_variables_all_patients #dataset not joined in, just referenced here so that it will import with template for easy access if user wants to join to their summary tables
     
-    deaths_df = .select('person_id','patient_death')
-    df = .drop('patient_death_at_visit', 'during_macrovisit_hospitalization', 'macrovisit_start_date', 'macrovisit_end_date')
+    deaths_df = everyone_patient_deaths.select('person_id','patient_death')
+    df = all_patients_fact_day_table_LDS.drop('patient_death_at_visit', 'during_macrovisit_hospitalization', 'macrovisit_start_date', 'macrovisit_end_date')
   
     df = df.groupby('person_id').agg(
         F.max('BMI_rounded').alias('BMI_max_observed_or_calculated'),
@@ -114,7 +117,7 @@ def all_patients_summary_fact_table_LDS(, , , Sdoh_variables_all_patients):
     
     #join above tables on patient ID  
     df = df.join(deaths_df, 'person_id', 'left').withColumnRenamed('patient_death', 'patient_death_indicator')
-    df = .join(df, 'person_id','left')
+    df = everyone_cohort.join(df, 'person_id','left')
     
     df = df.na.fill(value=0, subset = [col for col in df.columns if col not in ('BMI_max_observed_or_calculated', 'postal_code', 'age')])
     
@@ -815,6 +818,14 @@ from pyspark.sql import functions as F
 )
 from pyspark.sql.types import *
 def unnamed():
+    schema = StructType([])
+    return spark.createDataFrame([[]], schema=schema)
+
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.f7547c50-be50-4a77-a2c6-9bb9b9542ecd")
+)
+from pyspark.sql.types import *
+def unnamed_1():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
 
