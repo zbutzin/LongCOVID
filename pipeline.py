@@ -89,7 +89,7 @@ from pyspark.sql import functions as F
 #Last Update - 12/7/22
 #Description - The final step is to aggregate information to create a data frame that contains a single row of data for each patient in the cohort.  This node aggregates all information from the cohort_all_facts_table and summarizes each patient's facts in a single row.
 
-def all_patients_summary_fact_table_LDS(all_patients_fact_day_table_LDS, everyone_cohort, everyone_patient_deaths, Sdoh_variables_all_patients):
+def all_patients_summary_facts_table_copy(all_patients_fact_day_table_LDS, everyone_cohort, everyone_patient_deaths, Sdoh_variables_all_patients):
 
     SDOH_vars = Sdoh_variables_all_patients #dataset not joined in, just referenced here so that it will import with template for easy access if user wants to join to their summary tables
     
