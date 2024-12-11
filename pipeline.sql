@@ -20,3 +20,6 @@ SELECT *
 FROM Join_1
 WHERE date > drug_exposure_start_date;
 
+-- confirm this logic with Zach, it might be the other way around. 
+-- how do i make this more similar to all_patients table with the logic? I need four inputs but idk how to input them like that 
+
