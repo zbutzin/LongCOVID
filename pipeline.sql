@@ -50,8 +50,8 @@ WHERE
         SELECT 1 
         FROM covid_dates c2 
         WHERE c2.person_id = t.person_id
-          AND t.Date >= add_months(c2.covid_date, 1)  -- At least 1 month after
-          AND t.Date <= add_months(c2.covid_date, 12)  -- At most 12 months after
+          AND t.date >= add_months(c2.covid_date, 1)  -- At least 1 month after
+          AND t.date <= add_months(c2.covid_date, 12)  -- At most 12 months after
      ))
-ORDER BY t.person_id, t.Date
+ORDER BY t.person_id, t.date
 
