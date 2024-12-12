@@ -13,6 +13,14 @@ JOIN all_patients_fact_day_table_LDS AS ap
 ON ft.new_person_id = ap.person_id
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.4acf9e07-8cc0-4c1d-be99-5d925ea7d314"),
+    unnamed_2=Input(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475")
+)
+SELECT *
+FROM unnamed_2
+WHERE date > drug_exposure_start_date;
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0"),
     Join_1=Input(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76")
 )
