@@ -31,7 +31,7 @@ WITH covid_dates AS (
     -- Get all COVID diagnosis dates for each person
     SELECT DISTINCT
         person_id,
-        Date as covid_date
+        unnamed_1.date as covid_date
     FROM unnamed_1
     WHERE confirmed_covid_patient = 1
 )
