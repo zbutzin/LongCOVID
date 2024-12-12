@@ -826,7 +826,7 @@ from pyspark.sql import functions as F
     Final_table_2=Input(rid="ri.foundry.main.dataset.e3b48760-d3ac-410b-a780-e00f393ff0f5")
 )
 def rename_1(Final_table_2):
-    renamed_df = Final_table_2.withColumnRenamed("pcos", "pcos_new") \
+    renamed_df = Final_table_2.withColumnRenamed("pcos", "pcos_new")
     return renamed_df
 
 @transform_pandas(
