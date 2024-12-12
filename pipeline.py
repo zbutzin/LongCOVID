@@ -822,17 +822,18 @@ def everyone_vaccines_of_interest(Vaccine_fact_lds, everyone_cohort):
 from pyspark.sql import functions as F
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.c55947ba-e74b-4027-acb2-0a3bb56908d0"),
+    Final_table_2=Input(rid="ri.foundry.main.dataset.e3b48760-d3ac-410b-a780-e00f393ff0f5")
+)
+def rename_1(Final_table_2):
+    renamed_df = age_filter_2.withColumnRenamed("pcos", "pcos_new") \
+    return renamed_df
+
+@transform_pandas(
     Output(rid="ri.vector.main.execute.9b0d833d-bb7b-40e1-a629-6248804b664a")
 )
 from pyspark.sql.types import *
 def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.ff2bae43-bc45-4c1b-83ac-0627c7839adf"),
-    Final_table_2=Input(rid="ri.foundry.main.dataset.e3b48760-d3ac-410b-a780-e00f393ff0f5")
-)
-def unnamed_2(Final_table_2):
-    
 
