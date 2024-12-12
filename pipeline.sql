@@ -23,3 +23,10 @@ WHERE date > drug_exposure_start_date;
 -- confirm this logic with Zach, it might be the other way around. 
 -- how do i make this more similar to all_patients table with the logic? I need four inputs but idk how to input them like that 
 
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.390ca2cf-7fcf-4a93-b254-373e1d50349e"),
+    unnamed_1=Input(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
+)
+SELECT *
+FROM unnamed_1
+
