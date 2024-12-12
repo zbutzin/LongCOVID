@@ -24,9 +24,33 @@ WHERE date > drug_exposure_start_date;
 -- how do i make this more similar to all_patients table with the logic? I need four inputs but idk how to input them like that 
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.390ca2cf-7fcf-4a93-b254-373e1d50349e"),
+    Output(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475"),
     unnamed_1=Input(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
 )
-SELECT *
-FROM unnamed_1
+WITH covid_dates AS (
+    SELECT DISTINCT
+        person_id,
+        Date as covid_date
+    FROM unnamed_1
+    WHERE confirmed_covid_patient = 1
+)
+
+SELECT DISTINCT t.*
+FROM unnamed_1 t
+LEFT JOIN covid_dates c
+    ON t.person_id = c.person_id
+WHERE 
+    -- Include all non-Long Covid rows
+    t."LL_Long_COVID_diagnosis" = 0
+    OR 
+    -- Include Long Covid rows that meet the timing criteria
+    (t."LL_Long_COVID_diagnosis" = 1 
+     AND EXISTS (
+        SELECT 1 
+        FROM covid_dates c2 
+        WHERE c2.person_id = t.person_id
+          AND t.Date >= DATEADD(month, 1, c2.covid_date)  -- At least 1 month after
+          AND t.Date <= DATEADD(month, 12, c2.covid_date)  -- At most 12 months after
+     ))
+ORDER BY t.person_id, t.Date;
 
