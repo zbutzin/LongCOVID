@@ -28,6 +28,7 @@ WHERE date > drug_exposure_start_date;
     unnamed_1=Input(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
 )
 WITH covid_dates AS (
+    -- Get all COVID diagnosis dates for each person
     SELECT DISTINCT
         person_id,
         Date as covid_date
@@ -41,16 +42,16 @@ LEFT JOIN covid_dates c
     ON t.person_id = c.person_id
 WHERE 
     -- Include all non-Long Covid rows
-    t."LL_Long_COVID_diagnosis" = 0
+    t.LL_Long_COVID_diagnosis = 0
     OR 
     -- Include Long Covid rows that meet the timing criteria
-    (t."LL_Long_COVID_diagnosis" = 1 
+    (t.LL_Long_COVID_diagnosis = 1 
      AND EXISTS (
         SELECT 1 
         FROM covid_dates c2 
         WHERE c2.person_id = t.person_id
-          AND t.Date >= DATEADD(month, 1, c2.covid_date)  -- At least 1 month after
-          AND t.Date <= DATEADD(month, 12, c2.covid_date)  -- At most 12 months after
+          AND t.Date >= add_months(c2.covid_date, 1)  -- At least 1 month after
+          AND t.Date <= add_months(c2.covid_date, 12)  -- At most 12 months after
      ))
-ORDER BY t.person_id, t.Date;
+ORDER BY t.person_id, t.Date
 
