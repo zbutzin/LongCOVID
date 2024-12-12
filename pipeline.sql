@@ -42,10 +42,10 @@ LEFT JOIN covid_dates c
     ON t.person_id = c.person_id
 WHERE 
     -- Include all non-Long Covid rows
-    t.LL_Long_COVID_diagnosis = 0
+    t.LL_Long_COVID_diagnosis_indicator = 0
     OR 
     -- Include Long Covid rows that meet the timing criteria
-    (t.LL_Long_COVID_diagnosis = 1 
+    (t.LL_Long_COVID_diagnosis_indicator = 1 
      AND EXISTS (
         SELECT 1 
         FROM covid_dates c2 
