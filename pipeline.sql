@@ -24,7 +24,6 @@ WITH filtered_table AS (
             ORDER BY date DESC
         ) AS rn
     FROM unnamed_1
-    WHERE date > drug_exposure_start_date
 )
 SELECT *
 FROM filtered_table
