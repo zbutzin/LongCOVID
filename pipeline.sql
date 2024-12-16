@@ -63,3 +63,10 @@ WHERE
      ))
 ORDER BY t.person_id, t.date
 
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.5ebb5f72-1311-44fe-95ec-56cd9055787f"),
+    unnamed_1=Input(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
+)
+SELECT *
+FROM unnamed_1
+
