@@ -44,6 +44,7 @@ WHERE date > drug_exposure_start_date;
 SELECT *
 FROM Join_1
 WHERE date > drug_exposure_start_date
+PARTITION BY new_person_id
 ORDER BY date DESC;
 
 -- confirm this logic with Zach, it might be the other way around. 
