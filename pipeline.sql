@@ -20,7 +20,7 @@ WITH filtered_table AS (
     SELECT
         *,
         ROW_NUMBER() OVER (
-            PARTITION BY patient_id
+            PARTITION BY new_person_id
             ORDER BY date DESC
         ) AS rn
     FROM unnamed_1
