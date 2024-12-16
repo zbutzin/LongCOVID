@@ -13,6 +13,29 @@ JOIN all_patients_fact_day_table_LDS AS ap
 ON ft.new_person_id = ap.person_id
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.1edb9e65-519a-4ef8-ac66-558c0cd40725"),
+    unnamed_1=Input(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
+)
+WITH filtered_table AS (
+    SELECT
+        new_person_id,
+        date,
+        drug_exposure_start_date,
+        ROW_NUMBER() OVER (
+            PARTITION BY new_person_id
+            ORDER BY date DESC
+        ) AS rn
+    FROM unnamed_1
+    WHERE date < drug_exposure_start_date
+)
+SELECT
+    new_person_id,
+    date,
+    drug_exposure_start_date
+FROM filtered_table
+WHERE rn = 1;
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.4acf9e07-8cc0-4c1d-be99-5d925ea7d314"),
     unnamed_2=Input(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475")
 )
@@ -62,11 +85,4 @@ WHERE
           AND t.date <= add_months(c2.covid_date, 12)  -- At most 12 months after
      ))
 ORDER BY t.person_id, t.date
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.5ebb5f72-1311-44fe-95ec-56cd9055787f"),
-    unnamed_1=Input(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
-)
-SELECT *
-FROM unnamed_1
 
