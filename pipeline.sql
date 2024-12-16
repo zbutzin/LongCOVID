@@ -23,7 +23,7 @@ WITH filtered_table AS (
             PARTITION BY patient_id
             ORDER BY date DESC
         ) AS rn
-    FROM Join_1
+    FROM unnamed_1
     WHERE date > drug_exposure_start_date
 )
 SELECT *
