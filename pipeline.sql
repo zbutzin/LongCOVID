@@ -18,20 +18,15 @@ ON ft.new_person_id = ap.person_id
 )
 WITH filtered_table AS (
     SELECT
-        new_person_id,
-        date,
-        drug_exposure_start_date,
+        *,
         ROW_NUMBER() OVER (
-            PARTITION BY new_person_id
+            PARTITION BY patient_id
             ORDER BY date DESC
         ) AS rn
-    FROM unnamed_1
-    WHERE date < drug_exposure_start_date
+    FROM Join_1
+    WHERE date > drug_exposure_start_date
 )
-SELECT
-    new_person_id,
-    date,
-    drug_exposure_start_date
+SELECT *
 FROM filtered_table
 WHERE rn = 1;
 
