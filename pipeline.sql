@@ -57,27 +57,35 @@ WITH covid_dates AS (
     -- Get all COVID diagnosis dates for each person
     SELECT DISTINCT
         person_id,
-        Join_1.date as covid_date
+        Join_1.date AS covid_date
     FROM Join_1
     WHERE confirmed_covid_patient = 1
+),
+filtered_data AS (
+    SELECT 
+        t.*,
+        CASE 
+            -- If Long COVID diagnosis is outside the study period, set status to 0
+            WHEN t.LL_Long_COVID_diagnosis_indicator = 1
+                 AND (
+                     t.date < t.drug_exposure_start_date OR 
+                     t.date > DATE_ADD(t.drug_exposure_start_date, INTERVAL 12 MONTH)
+                 ) THEN 0
+            ELSE t.LL_Long_COVID_diagnosis_indicator
+        END AS updated_LL_Long_COVID_diagnosis_indicator
+    FROM Join_1 t
+    LEFT JOIN covid_dates c
+        ON t.person_id = c.person_id
+    WHERE 
+        -- Exclude rows where Long COVID date is before drug_exposure_start_date
+        t.LL_Long_COVID_diagnosis_indicator = 0 
+        OR 
+        (t.LL_Long_COVID_diagnosis_indicator = 1
+         AND t.date >= t.drug_exposure_start_date 
+         AND t.date <= DATE_ADD(t.drug_exposure_start_date, INTERVAL 12 MONTH))
 )
-
-SELECT DISTINCT t.*
-FROM Join_1 t
-LEFT JOIN covid_dates c
-    ON t.person_id = c.person_id
-WHERE 
-    -- Include all non-Long Covid rows
-    t.LL_Long_COVID_diagnosis_indicator = 0
-    OR 
-    -- Include Long Covid rows that meet the timing criteria
-    (t.LL_Long_COVID_diagnosis_indicator = 1 
-     AND EXISTS (
-        SELECT 1 
-        FROM covid_dates c2 
-        WHERE c2.person_id = t.person_id
-          AND t.date >= add_months(c2.covid_date, 1)  -- At least 1 month after
-          AND t.date <= add_months(c2.covid_date, 12)  -- At most 12 months after
-     ))
-ORDER BY t.person_id, t.date
+SELECT DISTINCT 
+    person_id, date, drug_exposure_start_date, updated_LL_Long_COVID_diagnosis_indicator
+FROM filtered_data
+ORDER BY person_id, date;
 
