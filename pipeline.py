@@ -842,7 +842,7 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.92ec500f-0d89-4468-a851-77a523721332"),
+    Output(rid="ri.vector.main.execute.fd575735-bf5b-4217-b34f-7cebfa3ce884"),
     Join_1=Input(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76")
 )
 from pyspark.sql import functions as F
