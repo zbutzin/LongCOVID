@@ -842,9 +842,55 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.fd575735-bf5b-4217-b34f-7cebfa3ce884"),
+    Output(rid="ri.foundry.main.dataset.92ec500f-0d89-4468-a851-77a523721332"),
     Join_1=Input(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76")
 )
+from pyspark.sql import functions as F
+
 def unnamed_2(Join_1):
-    
+    # Step 1: Create a DataFrame for `covid_dates`
+    covid_dates = (
+        join_1.filter(F.col("confirmed_covid_patient") == 1)
+        .select("person_id", F.col("date").alias("covid_date"))
+        .distinct()
+    )
+
+    # Step 2: Apply filtering and transformations to `join_1`
+    filtered_data = (
+        join_1.alias("t")
+        .join(covid_dates.alias("c"), on="person_id", how="left")
+        .withColumn(
+            "updated_LL_Long_COVID_diagnosis_indicator",
+            F.when(
+                (F.col("t.LL_Long_COVID_diagnosis_indicator") == 1) &
+                (
+                    (F.col("t.date") < F.col("t.drug_exposure_start_date")) |
+                    (F.col("t.date") > F.date_add(F.col("t.drug_exposure_start_date"), 365))
+                ),
+                0
+            ).otherwise(F.col("t.LL_Long_COVID_diagnosis_indicator"))
+        )
+        .filter(
+            (F.col("t.LL_Long_COVID_diagnosis_indicator") == 0) |
+            (
+                (F.col("t.LL_Long_COVID_diagnosis_indicator") == 1) &
+                (F.col("t.date") >= F.col("t.drug_exposure_start_date")) &
+                (F.col("t.date") <= F.date_add(F.col("t.drug_exposure_start_date"), 365))
+            )
+        )
+    )
+
+    # Step 3: Select distinct records from `filtered_data` and order them
+    result = (
+        filtered_data.select(
+            "t.person_id",
+            "t.date",
+            "t.drug_exposure_start_date",
+            "updated_LL_Long_COVID_diagnosis_indicator"
+        )
+        .distinct()
+        .orderBy("person_id", "date")
+    )
+
+    return result
 
