@@ -3,6 +3,54 @@
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475")
 )
+from pyspark.sql import functions as F
+
+# Step 1: Create a DataFrame for `covid_dates` using `join_1`
+covid_dates = (
+    join_1.filter(F.col("confirmed_covid_patient") == 1)
+    .select("person_id", F.col("date").alias("covid_date"))
+    .distinct()
+)
+
+# Step 2: Apply filtering and transformations to `join_1` while joining with `covid_dates`
+filtered_data = (
+    join_1.alias("t")
+    .join(covid_dates.alias("c"), on="person_id", how="left")
+    .withColumn(
+        "updated_LL_Long_COVID_diagnosis_indicator",
+        F.when(
+            (F.col("t.LL_Long_COVID_diagnosis_indicator") == 1) &
+            (
+                (F.col("t.date") < F.col("t.drug_exposure_start_date")) |
+                (F.col("t.date") > F.date_add(F.col("t.drug_exposure_start_date"), 365))
+            ),
+            0
+        ).otherwise(F.col("t.LL_Long_COVID_diagnosis_indicator"))
+    )
+    .filter(
+        (F.col("t.LL_Long_COVID_diagnosis_indicator") == 0) |
+        (
+            (F.col("t.LL_Long_COVID_diagnosis_indicator") == 1) &
+            (F.col("t.date") >= F.col("t.drug_exposure_start_date")) &
+            (F.col("t.date") <= F.date_add(F.col("t.drug_exposure_start_date"), 365))
+        )
+    )
+)
+
+# Step 3: Select distinct records from `filtered_data` and order them
+result = (
+    filtered_data.select(
+        "t.person_id",
+        "t.date",
+        "t.drug_exposure_start_date",
+        "updated_LL_Long_COVID_diagnosis_indicator"
+    )
+    .distinct()
+    .orderBy("person_id", "date")
+)
+
+# Show the result
+result.show()
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
@@ -840,4 +888,11 @@ from pyspark.sql.types import *
 def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
+
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.82692ba4-7e2f-4d9d-bf87-a709c3ed666e"),
+    Join_1=Input(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76")
+)
+def unnamed_2(Join_1):
+    
 
