@@ -1,6 +1,46 @@
 
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475"),
+    Join_1=Input(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76")
+)
+WITH covid_dates AS (
+    -- Get all COVID diagnosis dates for each person
+    SELECT DISTINCT
+        person_id,
+        Join_1.date AS covid_date
+    FROM Join_1
+    WHERE confirmed_covid_patient = 1
+),
+filtered_data AS (
+    SELECT 
+        t.*,
+        CASE 
+            -- If Long COVID diagnosis is outside the study period, set status to 0
+            WHEN t.LL_Long_COVID_diagnosis_indicator = 1
+                 AND (
+                     t.date < t.drug_exposure_start_date OR 
+                     t.date > DATE_ADD(t.drug_exposure_start_date, INTERVAL 12 MONTH)
+                 ) THEN 0
+            ELSE t.LL_Long_COVID_diagnosis_indicator
+        END AS updated_LL_Long_COVID_diagnosis_indicator
+    FROM Join_1 t
+    LEFT JOIN covid_dates c
+        ON t.person_id = c.person_id
+    WHERE 
+        -- Exclude rows where Long COVID date is before drug_exposure_start_date
+        t.LL_Long_COVID_diagnosis_indicator = 0 
+        OR 
+        (t.LL_Long_COVID_diagnosis_indicator = 1
+         AND t.date >= t.drug_exposure_start_date 
+         AND t.date <= DATE_ADD(t.drug_exposure_start_date, INTERVAL 12 MONTH))
+)
+SELECT DISTINCT 
+    person_id, date, drug_exposure_start_date, updated_LL_Long_COVID_diagnosis_indicator
+FROM filtered_data
+ORDER BY person_id, date;
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76"),
     all_patients_fact_day_table_LDS=Input(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
     rename_1=Input(rid="ri.foundry.main.dataset.c55947ba-e74b-4027-acb2-0a3bb56908d0")

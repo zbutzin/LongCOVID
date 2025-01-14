@@ -1,58 +1,6 @@
 
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475")
-)
-from pyspark.sql import functions as F
-
-# Step 1: Create a DataFrame for `covid_dates` using `join_1`
-covid_dates = (
-    join_1.filter(F.col("confirmed_covid_patient") == 1)
-    .select("person_id", F.col("date").alias("covid_date"))
-    .distinct()
-)
-
-# Step 2: Apply filtering and transformations to `join_1` while joining with `covid_dates`
-filtered_data = (
-    join_1.alias("t")
-    .join(covid_dates.alias("c"), on="person_id", how="left")
-    .withColumn(
-        "updated_LL_Long_COVID_diagnosis_indicator",
-        F.when(
-            (F.col("t.LL_Long_COVID_diagnosis_indicator") == 1) &
-            (
-                (F.col("t.date") < F.col("t.drug_exposure_start_date")) |
-                (F.col("t.date") > F.date_add(F.col("t.drug_exposure_start_date"), 365))
-            ),
-            0
-        ).otherwise(F.col("t.LL_Long_COVID_diagnosis_indicator"))
-    )
-    .filter(
-        (F.col("t.LL_Long_COVID_diagnosis_indicator") == 0) |
-        (
-            (F.col("t.LL_Long_COVID_diagnosis_indicator") == 1) &
-            (F.col("t.date") >= F.col("t.drug_exposure_start_date")) &
-            (F.col("t.date") <= F.date_add(F.col("t.drug_exposure_start_date"), 365))
-        )
-    )
-)
-
-# Step 3: Select distinct records from `filtered_data` and order them
-result = (
-    filtered_data.select(
-        "t.person_id",
-        "t.date",
-        "t.drug_exposure_start_date",
-        "updated_LL_Long_COVID_diagnosis_indicator"
-    )
-    .distinct()
-    .orderBy("person_id", "date")
-)
-
-# Show the result
-result.show()
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
     everyone_conditions_of_interest=Input(rid="ri.foundry.main.dataset.09eea354-b653-43f0-a925-bcc783bd097e"),
     everyone_devices_of_interest=Input(rid="ri.foundry.main.dataset.bd5969c3-8b84-4cae-a11c-2b3fdf027962"),
