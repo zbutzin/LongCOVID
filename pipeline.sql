@@ -5,7 +5,8 @@
     Join_1=Input(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76")
 )
 SELECT * 
-WHERE OBESITY = 0; 
+FROM Join_1 
+WHERE OBESITY = 0;
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76"),
