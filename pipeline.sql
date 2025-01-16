@@ -58,14 +58,6 @@ ORDER BY date DESC;
 -- how do i make this more similar to all_patients table with the logic? I need four inputs but idk how to input them like that 
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.8fbdbd62-6f22-4793-b7c0-6d35c510de8c"),
-    Join_1=Input(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76")
-)
-SELECT *
-FROM Join_1
-WHERE 
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.cb95ba7e-7f11-4d96-91fa-78c7cf21eccc"),
     all_patients_fact_day_table_LDS=Input(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
     rename_1=Input(rid="ri.foundry.main.dataset.c55947ba-e74b-4027-acb2-0a3bb56908d0")
