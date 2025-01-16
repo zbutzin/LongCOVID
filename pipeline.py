@@ -837,3 +837,10 @@ def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
 
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.d8d9a376-48c8-42cb-9b69-1d7c5043e2f0"),
+    all_patients_fact_day_table_LDS=Input(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131")
+)
+def unnamed_3(all_patients_fact_day_table_LDS):
+    
+
