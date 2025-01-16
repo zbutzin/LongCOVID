@@ -63,4 +63,5 @@ ORDER BY date DESC;
 )
 SELECT *
 FROM Join_1
+WHERE 
 
