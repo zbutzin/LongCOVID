@@ -69,3 +69,10 @@ ORDER BY date DESC;
 -- confirm this logic with Zach, it might be the other way around. 
 -- how do i make this more similar to all_patients table with the logic? I need four inputs but idk how to input them like that 
 
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.8657760f-fdbb-4633-9fcd-8d88a892aba5"),
+    Join_2=Input(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3")
+)
+SELECT *
+FROM Join_2
+
