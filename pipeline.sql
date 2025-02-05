@@ -70,9 +70,30 @@ ORDER BY date DESC;
 -- how do i make this more similar to all_patients table with the logic? I need four inputs but idk how to input them like that 
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.8657760f-fdbb-4633-9fcd-8d88a892aba5"),
+    Output(rid="ri.foundry.main.dataset.0d41e69a-0bb4-4569-8dd0-adb55e1b348d"),
     Join_2=Input(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3")
+)
+WITH Join_2 AS (
+    SELECT 
+        *,
+        CASE 
+            -- Long COVID within 12 months after drug exposure
+            WHEN long_covid_date >= drug_exposure_start_date 
+                AND long_covid_date <= DATEADD(month, 12, drug_exposure_start_date) 
+                THEN 1
+            -- Long COVID more than 12 months after drug exposure
+            WHEN long_covid_date > DATEADD(month, 12, drug_exposure_start_date) 
+                THEN 0
+            -- Long COVID before drug exposure will be excluded
+            WHEN long_covid_date < drug_exposure_start_date 
+                THEN NULL
+            -- No Long COVID diagnosis (date is NULL)
+            WHEN long_covid_date IS NULL 
+                THEN 0
+        END as long_covid_status
+    FROM join_2
 )
 SELECT *
 FROM Join_2
+WHERE long_covid_status IS NOT NULL;
 
