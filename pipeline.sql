@@ -77,11 +77,9 @@ WITH filtered_patients AS (
     SELECT 
         *,
         CASE 
-            -- If they have Long COVID diagnosis (1) and it's within 12 months after drug start
             WHEN LL_Long_COVID_diagnosis = 1 
                 AND drug_exposure_start_date <= DATEADD(month, 12, drug_exposure_start_date) 
                 THEN 1
-            -- Otherwise they don't have Long COVID in our study period
             ELSE 0
         END as long_covid_status
     FROM Join_2
@@ -89,4 +87,11 @@ WITH filtered_patients AS (
 SELECT *
 FROM filtered_patients
 WHERE long_covid_status IS NOT NULL;
+
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.52d1e361-2284-4619-989b-405936b07629"),
+    Join_2=Input(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3")
+)
+SELECT *
+FROM Join_2
 
