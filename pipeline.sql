@@ -89,9 +89,22 @@ FROM filtered_patients
 WHERE long_covid_status IS NOT NULL;
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.52d1e361-2284-4619-989b-405936b07629"),
+    Output(rid="ri.foundry.main.dataset.237eb4db-0dd2-48b7-8e4f-50b38a8acf4b"),
     Join_2=Input(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3")
 )
+WITH filtered_patients AS (
+    SELECT
+        *,
+        CASE
+            WHEN LL_Long_COVID_diagnosis = 1
+                 AND LL_Long_COVID_diagnosis_date BETWEEN drug_exposure_start_date 
+                                                     AND DATEADD(month, 12, drug_exposure_start_date)
+            THEN 1
+            ELSE 0
+        END AS long_covid_status
+    FROM Join_2
+)
 SELECT *
-FROM Join_2
+FROM filtered_patients
+WHERE long_covid_status = 1;
 
