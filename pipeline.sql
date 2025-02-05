@@ -77,21 +77,14 @@ WITH filtered_patients AS (
     SELECT 
         *,
         CASE 
-            -- Long COVID within 12 months after drug exposure
-            WHEN long_covid_date >= drug_exposure_start_date 
-                AND long_covid_date <= DATEADD(month, 12, drug_exposure_start_date) 
+            -- If they have Long COVID diagnosis (1) and it's within 12 months after drug start
+            WHEN LL_Long_Covid_diagnosis = 1 
+                AND drug_exposure_start_date <= DATEADD(month, 12, drug_exposure_start_date) 
                 THEN 1
-            -- Long COVID more than 12 months after drug exposure
-            WHEN long_covid_date > DATEADD(month, 12, drug_exposure_start_date) 
-                THEN 0
-            -- Long COVID before drug exposure will be excluded
-            WHEN long_covid_date < drug_exposure_start_date 
-                THEN NULL
-            -- No Long COVID diagnosis (date is NULL)
-            WHEN long_covid_date IS NULL 
-                THEN 0
+            -- Otherwise they don't have Long COVID in our study period
+            ELSE 0
         END as long_covid_status
-    FROM Join_2
+    FROM join_2
 )
 SELECT *
 FROM filtered_patients
