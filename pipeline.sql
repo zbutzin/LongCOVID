@@ -21,6 +21,18 @@ JOIN all_patients_fact_day_table_LDS AS ap
 ON ft.new_person_id = ap.person_id
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3"),
+    all_patients_fact_day_table_LDS=Input(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
+    rename_2=Input(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5")
+)
+SELECT 
+    ft.*, 
+    ap.*
+FROM rename_2 AS ft
+JOIN all_patients_fact_day_table_LDS AS ap
+ON ft.new_person_id = ap.person_id
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.1edb9e65-519a-4ef8-ac66-558c0cd40725"),
     unnamed_1=Input(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
 )

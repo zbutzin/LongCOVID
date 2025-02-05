@@ -845,10 +845,3 @@ def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
 
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.959d2d16-478f-4a2c-997a-e44fa54f63d2"),
-    rename_2=Input(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5")
-)
-def unnamed_2(rename_2):
-    
-
