@@ -823,10 +823,10 @@ from pyspark.sql import functions as F
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.c55947ba-e74b-4027-acb2-0a3bb56908d0"),
-    Final_table_2=Input(rid="ri.foundry.main.dataset.e3b48760-d3ac-410b-a780-e00f393ff0f5")
+    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
 )
-def rename_1(Final_table_2):
-    renamed_df = Final_table_2.withColumnRenamed("pcos", "pcos_new")
+def rename_1( Final_table_3):
+    renamed_df = Final_table_3.withColumnRenamed("pcos", "pcos_new")
     return renamed_df
 
 @transform_pandas(
