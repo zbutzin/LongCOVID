@@ -830,17 +830,18 @@ def rename_1( Final_table_3):
     return renamed_df
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5"),
+    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
+)
+def rename_2( Final_table_3):
+    renamed_df = Final_table_3.withColumnRenamed("pcos", "pcos_new")
+    return renamed_df
+
+@transform_pandas(
     Output(rid="ri.vector.main.execute.9b0d833d-bb7b-40e1-a629-6248804b664a")
 )
 from pyspark.sql.types import *
 def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.2f0aa4f5-2416-4c62-803e-f5f4bf1aba9e"),
-    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
-)
-def unnamed_2(Final_table_3):
-    
 
