@@ -81,5 +81,5 @@ SELECT
         THEN 1
         ELSE 0
     END as long_covid_status
-FROM join_2;
+FROM Join_2;
 
