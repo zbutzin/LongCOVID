@@ -838,17 +838,18 @@ def rename_2( Final_table_3):
     return renamed_df
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.75b7b90a-aa84-4385-bef8-5a2184a82ea2"),
+    Dates_For_Covid=Input(rid="ri.foundry.main.dataset.b8afeda9-8ab4-4fe7-aa29-379461f4afe2")
+)
+def rename_covid(Dates_For_Covid):
+    renamed_df = Final_table_3.withColumnRenamed("person_id", "covid_date_person_id")
+    return renamed_df
+
+@transform_pandas(
     Output(rid="ri.vector.main.execute.9b0d833d-bb7b-40e1-a629-6248804b664a")
 )
 from pyspark.sql.types import *
 def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.3abc5ef1-3e1a-4af8-906a-8a9943323aae"),
-    Dates_For_Covid=Input(rid="ri.foundry.main.dataset.b8afeda9-8ab4-4fe7-aa29-379461f4afe2")
-)
-def unnamed_4(Dates_For_Covid):
-    
 
