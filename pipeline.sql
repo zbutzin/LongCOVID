@@ -33,6 +33,14 @@ JOIN all_patients_fact_day_table_LDS AS ap
 ON ft.new_person_id = ap.person_id
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.121c7066-de3e-443d-8d1c-648c03b78fef"),
+    condition_occurrence_1=Input(rid="ri.foundry.main.dataset.900fa2ad-87ea-4285-be30-c6b5bab60e86")
+)
+SELECT *
+FROM condition_occurrence
+where condition_concept_id in (705076, 710706)
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.1edb9e65-519a-4ef8-ac66-558c0cd40725"),
     unnamed_1=Input(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
 )
@@ -107,11 +115,4 @@ WITH filtered_patients AS (
 SELECT *
 FROM filtered_patients
 WHERE long_covid_status = 1;
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.6fe82a55-8a72-4dd3-bfb5-dc66a979f925"),
-    condition_occurrence_1=Input(rid="ri.foundry.main.dataset.900fa2ad-87ea-4285-be30-c6b5bab60e86")
-)
-SELECT *
-FROM condition_occurrence_1
 
