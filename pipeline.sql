@@ -37,11 +37,12 @@ ON ft.new_person_id = ap.person_id
 SELECT 
     ft.*, 
     ap.*,
-    DFC.*
+    rc.*
 FROM rename_2 AS ft
 JOIN all_patients_fact_day_table_LDS AS ap
-JOIN rename_covid as rc
-ON ft.new_person_id = ap.person_id = rc.
+    ON ft.new_person_id = ap.person_id
+JOIN rename_covid AS rc
+    ON ft.new_person_id = rc.covid_date_person_id;
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.121c7066-de3e-443d-8d1c-648c03b78fef"),
