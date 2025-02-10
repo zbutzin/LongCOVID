@@ -842,7 +842,7 @@ def rename_2( Final_table_3):
     Dates_For_Covid=Input(rid="ri.foundry.main.dataset.b8afeda9-8ab4-4fe7-aa29-379461f4afe2")
 )
 def rename_covid(Dates_For_Covid):
-    renamed_df = Final_table_3.withColumnRenamed("person_id", "covid_date_person_id")
+    renamed_df = Dates_For_Covid.withColumnRenamed("person_id", "covid_date_person_id")
     return renamed_df
 
 @transform_pandas(
