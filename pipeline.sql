@@ -1,6 +1,14 @@
 
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.b8afeda9-8ab4-4fe7-aa29-379461f4afe2"),
+    LongCovidDates=Input(rid="ri.foundry.main.dataset.121c7066-de3e-443d-8d1c-648c03b78fef")
+)
+SELECT person_id, min(condition_start_date) as long_covid_date
+FROM LongCovidDates
+GROUP BY person_id
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475"),
     Join_1=Input(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76")
 )
@@ -22,15 +30,18 @@ ON ft.new_person_id = ap.person_id
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3"),
+    Dates_For_Covid=Input(rid="ri.foundry.main.dataset.b8afeda9-8ab4-4fe7-aa29-379461f4afe2"),
     all_patients_fact_day_table_LDS=Input(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
     rename_2=Input(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5")
 )
 SELECT 
     ft.*, 
     ap.*
+    DFC.*
 FROM rename_2 AS ft
 JOIN all_patients_fact_day_table_LDS AS ap
-ON ft.new_person_id = ap.person_id
+JOIN Dates_For_Covid as DFC
+ON ft.new_person_id = ap.person_id = DFC.person_id
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.121c7066-de3e-443d-8d1c-648c03b78fef"),
@@ -115,12 +126,4 @@ WITH filtered_patients AS (
 SELECT *
 FROM filtered_patients
 WHERE long_covid_status = 1;
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.b8afeda9-8ab4-4fe7-aa29-379461f4afe2"),
-    LongCovidDates=Input(rid="ri.foundry.main.dataset.121c7066-de3e-443d-8d1c-648c03b78fef")
-)
-SELECT person_id, min(condition_start_date) as long_covid_date
-FROM LongCovidDates
-GROUP BY person_id
 
