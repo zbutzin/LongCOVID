@@ -845,11 +845,3 @@ def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
 
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.ebdc273f-35ab-409e-8941-23aca205528a")
-)
-from pyspark.sql.types import *
-def unnamed_4():
-    schema = StructType([])
-    return spark.createDataFrame([[]], schema=schema)
-
