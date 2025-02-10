@@ -36,7 +36,7 @@ ON ft.new_person_id = ap.person_id
 )
 SELECT 
     ft.*, 
-    ap.*
+    ap.*,
     DFC.*
 FROM rename_2 AS ft
 JOIN all_patients_fact_day_table_LDS AS ap
