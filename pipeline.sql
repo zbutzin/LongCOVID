@@ -108,3 +108,10 @@ SELECT *
 FROM filtered_patients
 WHERE long_covid_status = 1;
 
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.6fe82a55-8a72-4dd3-bfb5-dc66a979f925"),
+    condition_occurrence_1=Input(rid="ri.foundry.main.dataset.900fa2ad-87ea-4285-be30-c6b5bab60e86")
+)
+SELECT *
+FROM condition_occurrence_1
+
