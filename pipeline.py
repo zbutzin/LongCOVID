@@ -845,3 +845,10 @@ def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
 
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.3abc5ef1-3e1a-4af8-906a-8a9943323aae"),
+    Dates_For_Covid=Input(rid="ri.foundry.main.dataset.b8afeda9-8ab4-4fe7-aa29-379461f4afe2")
+)
+def unnamed_4(Dates_For_Covid):
+    
+
