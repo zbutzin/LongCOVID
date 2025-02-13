@@ -9,23 +9,11 @@ FROM LongCovidDates
 GROUP BY person_id
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475"),
-    Join_1=Input(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76")
+    Output(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475")
 )
 SELECT * 
 FROM Join_1 
 WHERE OBESITY = 0;
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76"),
-    all_patients_fact_day_table_LDS=Input(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131")
-)
-SELECT 
-    ft.*, 
-    ap.*
-FROM rename_1 AS ft
-JOIN all_patients_fact_day_table_LDS AS ap
-ON ft.new_person_id = ap.person_id
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3"),
@@ -77,8 +65,7 @@ FROM unnamed_2
 WHERE date > drug_exposure_start_date;
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0"),
-    Join_1=Input(rid="ri.foundry.main.dataset.6e355892-de04-497a-8a7b-a323d7e56b76")
+    Output(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
 )
 SELECT *
 FROM Join_1
