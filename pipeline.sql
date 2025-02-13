@@ -70,5 +70,5 @@ WITH filtered_patients AS (
 SELECT *
 FROM filtered_patients
 WHERE long_covid_status = 1 
-      AND long_covid_date >= drug_exposure_start_date;  -- Ensure exclusion of early diagnoses
+      AND long_covid_date >= drug_exposure_start_date; 
 
