@@ -118,7 +118,7 @@ WITH filtered_patients AS (
         CASE
             WHEN LL_Long_COVID_diagnosis = 1
                  AND long_covid_date BETWEEN drug_exposure_start_date 
-                                                     AND DATEADD(month, 12, drug_exposure_start_date)
+                                         AND DATEADD(month, 12, drug_exposure_start_date)
             THEN 1
             ELSE 0
         END AS long_covid_status
@@ -126,5 +126,6 @@ WITH filtered_patients AS (
 )
 SELECT *
 FROM filtered_patients
-WHERE long_covid_status = 1;
+WHERE long_covid_status = 1 
+      AND long_covid_date >= drug_exposure_start_date;  -- Ensure exclusion of early diagnoses
 
