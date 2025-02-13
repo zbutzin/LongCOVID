@@ -852,7 +852,7 @@ def unnamed():
 def unnamed_1(unnamed_3):
     df = unnamed_3.filter(
         col("drug_exposure_start_date") > "2021-12-31"
-    ).orderBy(["person_id", "drug_exposure_start_date"], ascending=[True, False]) \
-     .dropDuplicates(["person_id"])
+        ).orderBy(["person_id", "drug_exposure_start_date"], ascending=[True, False]) \
+        .dropDuplicates(["person_id"])
      return df 
 
