@@ -822,14 +822,6 @@ def everyone_vaccines_of_interest(Vaccine_fact_lds, everyone_cohort):
 from pyspark.sql import functions as F
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.c55947ba-e74b-4027-acb2-0a3bb56908d0"),
-    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
-)
-def rename_1( Final_table_3):
-    renamed_df = Final_table_3.withColumnRenamed("pcos", "pcos_new")
-    return renamed_df
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5"),
     Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
 )
