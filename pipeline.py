@@ -854,5 +854,5 @@ def unnamed_1(unnamed_3):
         col("drug_exposure_start_date") > "2021-12-31"
         ).orderBy(["person_id", "drug_exposure_start_date"], ascending=[True, False]) \
         .dropDuplicates(["person_id"])
-     return df 
+    return df 
 
