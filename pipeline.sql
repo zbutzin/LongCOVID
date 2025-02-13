@@ -117,7 +117,7 @@ WITH filtered_patients AS (
         *,
         CASE
             WHEN LL_Long_COVID_diagnosis = 1
-                 AND date BETWEEN drug_exposure_start_date 
+                 AND long_covid_date BETWEEN drug_exposure_start_date 
                                                      AND DATEADD(month, 12, drug_exposure_start_date)
             THEN 1
             ELSE 0
