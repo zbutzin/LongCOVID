@@ -9,13 +9,6 @@ FROM LongCovidDates
 GROUP BY person_id
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475")
-)
-SELECT * 
-FROM Join_1 
-WHERE OBESITY = 0;
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3"),
     all_patients_fact_day_table_LDS=Input(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
     rename_2=Input(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5"),
@@ -38,30 +31,6 @@ JOIN rename_covid AS rc
 SELECT *
 FROM condition_occurrence_1
 where condition_concept_id in (705076, 710706)
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.1edb9e65-519a-4ef8-ac66-558c0cd40725")
-)
-WITH filtered_table AS (
-    SELECT
-        *,
-        ROW_NUMBER() OVER (
-            PARTITION BY new_person_id
-            ORDER BY date DESC
-        ) AS rn
-    FROM unnamed_1
-)
-SELECT *
-FROM filtered_table
-WHERE rn = 1;
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.4acf9e07-8cc0-4c1d-be99-5d925ea7d314"),
-    INVALID_TABLE=Input(rid="ri.foundry.main.dataset.fa71db87-90dd-4dc4-a14c-c3dd8bbe7475")
-)
-SELECT *
-FROM unnamed_2
-WHERE date > drug_exposure_start_date;
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.0d41e69a-0bb4-4569-8dd0-adb55e1b348d"),
