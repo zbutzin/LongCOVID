@@ -846,9 +846,12 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.3c5c7d48-f7ed-4a33-b881-07b8b9067929"),
+    Output(rid="ri.foundry.main.dataset.ed563d90-ea51-4a13-bf00-e578ec47ab11"),
     unnamed_3=Input(rid="ri.foundry.main.dataset.237eb4db-0dd2-48b7-8e4f-50b38a8acf4b")
 )
 def unnamed_1(unnamed_3):
-    
+    unnamed_3.filter(
+        col("drug_exposure_start_date") > "2021-12-31"
+    ).orderBy(["person_id", "drug_exposure_start_date"], ascending=[True, False]) \
+     .dropDuplicates(["person_id"])
 
