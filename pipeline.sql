@@ -40,8 +40,7 @@ FROM condition_occurrence_1
 where condition_concept_id in (705076, 710706)
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.1edb9e65-519a-4ef8-ac66-558c0cd40725"),
-    unnamed_1=Input(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
+    Output(rid="ri.foundry.main.dataset.1edb9e65-519a-4ef8-ac66-558c0cd40725")
 )
 WITH filtered_table AS (
     SELECT
@@ -63,17 +62,6 @@ WHERE rn = 1;
 SELECT *
 FROM unnamed_2
 WHERE date > drug_exposure_start_date;
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.71aac910-05e4-455a-9303-72d94e5d8be0")
-)
-SELECT *
-FROM Join_1
-WHERE date > drug_exposure_start_date
-ORDER BY date DESC;
-
--- confirm this logic with Zach, it might be the other way around. 
--- how do i make this more similar to all_patients table with the logic? I need four inputs but idk how to input them like that 
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.0d41e69a-0bb4-4569-8dd0-adb55e1b348d"),
