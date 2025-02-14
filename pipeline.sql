@@ -33,6 +33,13 @@ FROM condition_occurrence_1
 where condition_concept_id in (705076, 710706)
 
 @transform_pandas(
+    Output(rid="ri.vector.main.execute.7aed8d57-2d72-40bf-97ff-c7715e4e5336"),
+    dedepe=Input(rid="ri.foundry.main.dataset.d7db2751-1f46-4bb2-a5dd-cf0ef3ed4278")
+)
+SELECT *
+FROM dedepe
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.237eb4db-0dd2-48b7-8e4f-50b38a8acf4b"),
     Join_2=Input(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3")
 )
