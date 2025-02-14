@@ -880,9 +880,18 @@ def unnamed_1(unnamed_3):
     return df 
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.bae5d994-c7da-40d3-9a94-25b180953bd3"),
+    Output(rid="ri.foundry.main.dataset.1352d8e9-60a7-492a-8245-87aa84fc51e3"),
     filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
 )
-def unnamed_2(filter_covid_dates):
+def update_long_covid_status(filter_covid_dates):
+    # Calculate the date that's 12 months after drug exposure start
+    twelve_months_after = filter_covid_dates['drug_exposure_start_date'] + pd.DateOffset(months=12)
     
+    # Create a mask for rows where long_covid_date is more than 12 months after drug exposure
+    mask = filter_covid_dates['long_covid_date'] > twelve_months_after
+    
+    # Set Long COVID status to 0 for those rows
+    filter_covid_dates.loc[mask, 'LL_Long_COVID_indicator'] = 0
+    
+    return filter_covid_dates
 
