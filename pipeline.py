@@ -883,6 +883,7 @@ def unnamed_1(unnamed_3):
     Output(rid="ri.foundry.main.dataset.1352d8e9-60a7-492a-8245-87aa84fc51e3"),
     filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
 )
+import pandas as pd 
 def update_long_covid_status(filter_covid_dates):
     # Calculate the date that's 12 months after drug exposure start
     twelve_months_after = filter_covid_dates['drug_exposure_start_date'] + pd.DateOffset(months=12)
