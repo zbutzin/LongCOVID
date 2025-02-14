@@ -36,11 +36,18 @@ where condition_concept_id in (705076, 710706)
     Output(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181"),
     dedepe=Input(rid="ri.foundry.main.dataset.d7db2751-1f46-4bb2-a5dd-cf0ef3ed4278")
 )
-SELECT *
-FROM dedepe
-WHERE LL_Long_COVID_diagnosis = 1
-      AND long_covid_date <= DATEADD(month, 12, drug_exposure_start_date)
-      AND long_covid_date >= drug_exposure_start_date;
+UPDATE dedepe
+SET LL_Long_COVID_indicator = 
+    CASE 
+        -- Keep as 1 if diagnosis is within 12 months of drug exposure
+        WHEN long_covid_diagnosis_date BETWEEN drug_exposure_start_date 
+            AND DATEADD(month, 12, drug_exposure_start_date) THEN 1
+        -- Set to 0 if diagnosis is more than 12 months after drug exposure
+        WHEN long_covid_diagnosis_date > DATEADD(month, 12, drug_exposure_start_date) THEN 0
+        -- Set to 0 if diagnosis is before drug exposure
+        WHEN long_covid_diagnosis_date < drug_exposure_start_date THEN 0
+    END
+WHERE LL_Long_COVID_indicator = 1;
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.237eb4db-0dd2-48b7-8e4f-50b38a8acf4b"),
