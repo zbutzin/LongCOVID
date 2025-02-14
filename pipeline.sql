@@ -32,24 +32,3 @@ SELECT *
 FROM condition_occurrence_1
 where condition_concept_id in (705076, 710706)
 
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.237eb4db-0dd2-48b7-8e4f-50b38a8acf4b"),
-    Join_2=Input(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3")
-)
-WITH filtered_patients AS (
-    SELECT
-        *,
-        CASE
-            WHEN LL_Long_COVID_diagnosis = 1
-                 AND long_covid_date BETWEEN drug_exposure_start_date 
-                                         AND DATEADD(month, 12, drug_exposure_start_date)
-            THEN 1
-            ELSE 0
-        END AS long_covid_status
-    FROM Join_2
-)
-SELECT *
-FROM filtered_patients
-WHERE long_covid_status = 1 
-      AND long_covid_date >= drug_exposure_start_date; 
-

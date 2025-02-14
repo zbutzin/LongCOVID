@@ -868,8 +868,7 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.ed563d90-ea51-4a13-bf00-e578ec47ab11"),
-    unnamed_3=Input(rid="ri.foundry.main.dataset.237eb4db-0dd2-48b7-8e4f-50b38a8acf4b")
+    Output(rid="ri.foundry.main.dataset.ed563d90-ea51-4a13-bf00-e578ec47ab11")
 )
 from pyspark.sql.functions import col
 def unnamed_1(unnamed_3):
