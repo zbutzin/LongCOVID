@@ -868,17 +868,6 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.ed563d90-ea51-4a13-bf00-e578ec47ab11")
-)
-from pyspark.sql.functions import col
-def unnamed_1(unnamed_3):
-    df = unnamed_3.filter(
-        col("drug_exposure_start_date") > "2021-12-31"
-        ).orderBy(["person_id", "drug_exposure_start_date"], ascending=[True, False]) \
-        .dropDuplicates(["person_id"])
-    return df 
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.1352d8e9-60a7-492a-8245-87aa84fc51e3"),
     filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
 )
