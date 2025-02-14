@@ -37,18 +37,18 @@ where condition_concept_id in (705076, 710706)
     dedepe=Input(rid="ri.foundry.main.dataset.d7db2751-1f46-4bb2-a5dd-cf0ef3ed4278")
 )
 SELECT 
-    *,
+    d.*,
     CASE 
         -- Keep as 1 if diagnosis is within 12 months of drug exposure
-        WHEN long_covid_date BETWEEN drug_exposure_start_date 
-            AND add_months(drug_exposure_start_date, 12) 
-            AND LL_Long_COVID_diagnosis = 1 THEN 1
+        WHEN d.long_covid_date BETWEEN d.drug_exposure_start_date 
+            AND add_months(d.drug_exposure_start_date, 12) 
+            AND d.LL_Long_COVID_diagnosis = 1 THEN 1
         -- Set to 0 in all other cases where it was previously 1
-        WHEN LL_Long_COVID_diagnosis = 1 THEN 0
+        WHEN d.LL_Long_COVID_diagnosis = 1 THEN 0
         -- Keep existing value for rows that were already 0
-        ELSE LL_Long_COVID_diagnosis
+        ELSE d.LL_Long_COVID_diagnosis
     END as LL_Long_COVID_diagnosis
-FROM dedepe
+FROM dedepe d
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.237eb4db-0dd2-48b7-8e4f-50b38a8acf4b"),
