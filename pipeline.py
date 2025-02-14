@@ -883,21 +883,27 @@ def unnamed_1(unnamed_3):
     Output(rid="ri.foundry.main.dataset.1352d8e9-60a7-492a-8245-87aa84fc51e3"),
     filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
 )
-import pandas as pd
+from pyspark.sql import functions as F
+from pyspark.sql.window import Window
 
 def update_long_covid_status(filter_covid_dates):
-    # Convert dates to datetime if they aren't already
-    filter_covid_dates['drug_exposure_start_date'] = pd.to_datetime(filter_covid_dates['drug_exposure_start_date'])
-    filter_covid_dates['long_covid_date'] = pd.to_datetime(filter_covid_dates['long_covid_date'])
+    # Calculate the date that's 12 months after drug exposure start using add_months
+    filter_covid_dates = filter_covid_dates.withColumn(
+        'twelve_months_after',
+        F.add_months(F.col('drug_exposure_start_date'), 12)
+    )
     
-    # Calculate the date that's 12 months after drug exposure start using timedelta
-    twelve_months_after = filter_covid_dates['drug_exposure_start_date'] + pd.Timedelta(days=365)
+    # Update Long COVID indicator based on the date comparison
+    filter_covid_dates = filter_covid_dates.withColumn(
+        'LL_Long_COVID_indicator',
+        F.when(
+            F.col('long_covid_date') > F.col('twelve_months_after'),
+            F.lit(0)
+        ).otherwise(F.col('LL_Long_COVID_diagnosis_indicator'))
+    )
     
-    # Create a mask for rows where long_covid_date is more than 12 months after drug exposure
-    mask = filter_covid_dates['long_covid_date'] > twelve_months_after
-    
-    # Set Long COVID status to 0 for those rows
-    filter_covid_dates.loc[mask, 'LL_Long_COVID_indicator'] = 0
+    # Drop the temporary column
+    filter_covid_dates = filter_covid_dates.drop('twelve_months_after')
     
     return filter_covid_dates
 
