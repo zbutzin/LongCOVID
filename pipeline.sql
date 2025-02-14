@@ -40,12 +40,12 @@ UPDATE dedepe
 SET LL_Long_COVID_indicator = 
     CASE 
         -- Keep as 1 if diagnosis is within 12 months of drug exposure
-        WHEN long_covid_diagnosis_date BETWEEN drug_exposure_start_date 
+        WHEN long_covid_date BETWEEN drug_exposure_start_date 
             AND DATEADD(month, 12, drug_exposure_start_date) THEN 1
         -- Set to 0 if diagnosis is more than 12 months after drug exposure
-        WHEN long_covid_diagnosis_date > DATEADD(month, 12, drug_exposure_start_date) THEN 0
+        WHEN long_covid_date > DATEADD(month, 12, drug_exposure_start_date) THEN 0
         -- Set to 0 if diagnosis is before drug exposure
-        WHEN long_covid_diagnosis_date < drug_exposure_start_date THEN 0
+        WHEN long_covid_date < drug_exposure_start_date THEN 0
     END
 WHERE LL_Long_COVID_indicator = 1;
 
