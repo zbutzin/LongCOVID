@@ -39,8 +39,7 @@ where condition_concept_id in (705076, 710706)
 SELECT *
 FROM dedepe
 WHERE LL_Long_COVID_diagnosis = 1
-      AND long_covid_date BETWEEN drug_exposure_start_date  
-                             AND DATEADD(month, 12, drug_exposure_start_date)
+      AND long_covid_date <= DATEADD(month, 12, drug_exposure_start_date)
       AND long_covid_date >= drug_exposure_start_date;
 
 @transform_pandas(
