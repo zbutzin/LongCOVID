@@ -857,3 +857,10 @@ def unnamed_1(unnamed_3):
         .dropDuplicates(["person_id"])
     return df 
 
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.b384d2b9-2681-4564-af36-c2ae0999e7cd"),
+    Join_2=Input(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3")
+)
+def unnamed_4(Join_2):
+    
+
