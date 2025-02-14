@@ -834,6 +834,16 @@ def everyone_vaccines_of_interest(Vaccine_fact_lds, everyone_cohort):
 from pyspark.sql import functions as F
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181"),
+    dedepe=Input(rid="ri.foundry.main.dataset.d7db2751-1f46-4bb2-a5dd-cf0ef3ed4278")
+)
+def filter_covid_dates(dedepe):
+    # Filter out rows where long_covid_date is before drug_exposure_start_date
+    filtered_df = dedepe[dedepe['long_covid_date'] >= dedepe['drug_exposure_start_date']]
+    
+    return filtered_df
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5"),
     Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
 )
