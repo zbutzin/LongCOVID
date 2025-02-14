@@ -838,7 +838,7 @@ from pyspark.sql import functions as F
     dedepe=Input(rid="ri.foundry.main.dataset.d7db2751-1f46-4bb2-a5dd-cf0ef3ed4278")
 )
 def filter_covid_dates(dedepe):
-    # Filter out rows where long_covid_date is before drug_exposure_start_date
+    
     filtered_df = dedepe[dedepe['long_covid_date'] >= dedepe['drug_exposure_start_date']]
     
     return filtered_df
@@ -878,4 +878,11 @@ def unnamed_1(unnamed_3):
         ).orderBy(["person_id", "drug_exposure_start_date"], ascending=[True, False]) \
         .dropDuplicates(["person_id"])
     return df 
+
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.bae5d994-c7da-40d3-9a94-25b180953bd3"),
+    filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
+)
+def unnamed_2(filter_covid_dates):
+    
 
