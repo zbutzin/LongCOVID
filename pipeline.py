@@ -868,13 +868,6 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.add1c079-84d1-456a-8951-935609bf8aa1"),
-    filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
-)
-def unnamed_1(filter_covid_dates):
-    
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.1352d8e9-60a7-492a-8245-87aa84fc51e3"),
     filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
 )
@@ -899,6 +892,30 @@ def update_long_covid_status(filter_covid_dates):
     
    
     filter_covid_dates = filter_covid_dates.drop('twelve_months_after')
+    
+    return filter_covid_dates
+
+@transform_pandas(
+    Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
+    filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
+)
+import pandas as pd
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+def update_long_covid_statuss(filter_covid_dates):
+    # Add 12 months to drug exposure start date
+    filter_covid_dates['twelve_months_after'] = filter_covid_dates['drug_exposure_start_date'] + pd.DateOffset(months=12)
+    
+    # Update Long COVID indicator based on date comparison
+    filter_covid_dates['LL_Long_COVID_indicator'] = np.where(
+        filter_covid_dates['long_covid_date'] > filter_covid_dates['twelve_months_after'],
+        0,
+        filter_covid_dates['LL_Long_COVID_diagnosis_indicator']
+    )
+    
+    # Drop the temporary column
+    filter_covid_dates = filter_covid_dates.drop(columns=['twelve_months_after'])
     
     return filter_covid_dates
 
