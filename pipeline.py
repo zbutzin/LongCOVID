@@ -901,6 +901,7 @@ def update_long_covid_status(filter_covid_dates):
 )
 import pandas as pd
 from datetime import datetime
+import numpy as np
 from dateutil.relativedelta import relativedelta
 
 def update_long_covid_statuss(filter_covid_dates):
