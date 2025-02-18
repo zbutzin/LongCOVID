@@ -839,7 +839,7 @@ from pyspark.sql import functions as F
 )
 def filter_covid_dates(dedepe):
     #If Long COVID date is before “drug_exposure_start_date”, exclude patient. 
-    filtered_df = dedepe[dedepe['long_covid_date'] >= dedepe['drug_exposure_start_date']]
+    filtered_df = dedepe[dedepe['long_covid_date'] <= dedepe['drug_exposure_start_date']]
     
     return filtered_df
 
