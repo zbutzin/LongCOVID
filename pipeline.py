@@ -838,7 +838,7 @@ from pyspark.sql import functions as F
     dedepe=Input(rid="ri.foundry.main.dataset.d7db2751-1f46-4bb2-a5dd-cf0ef3ed4278")
 )
 def filter_covid_dates(dedepe):
-    
+    #If Long COVID date is before “drug_exposure_start_date”, exclude patient. 
     filtered_df = dedepe[dedepe['long_covid_date'] >= dedepe['drug_exposure_start_date']]
     
     return filtered_df
@@ -868,20 +868,27 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
+    Output(rid="ri.vector.main.execute.add1c079-84d1-456a-8951-935609bf8aa1"),
+    filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
+)
+def unnamed_1(filter_covid_dates):
+    
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.1352d8e9-60a7-492a-8245-87aa84fc51e3"),
     filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
 )
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
-
+#If Long COVID date is more than 12 months after “drug_exposure_start_date”, set Long COVID status to 0 
 def update_long_covid_status(filter_covid_dates):
-    # Calculate the date that's 12 months after drug exposure start using add_months
+    
     filter_covid_dates = filter_covid_dates.withColumn(
         'twelve_months_after',
         F.add_months(F.col('drug_exposure_start_date'), 12)
     )
     
-    # Update Long COVID indicator based on the date comparison
+    
     filter_covid_dates = filter_covid_dates.withColumn(
         'LL_Long_COVID_indicator',
         F.when(
@@ -890,7 +897,7 @@ def update_long_covid_status(filter_covid_dates):
         ).otherwise(F.col('LL_Long_COVID_diagnosis_indicator'))
     )
     
-    # Drop the temporary column
+   
     filter_covid_dates = filter_covid_dates.drop('twelve_months_after')
     
     return filter_covid_dates
