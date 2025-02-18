@@ -874,20 +874,19 @@ def unnamed():
 import pandas as pd
 from datetime import datetime
 import numpy as np
-from dateutil.relativedelta import relativedelta
 
 def update_long_covid_statuss(filter_covid_dates):
     # Add 12 months to drug exposure start date
     filter_covid_dates['twelve_months_after'] = filter_covid_dates['drug_exposure_start_date'] + pd.DateOffset(months=12)
     
-    # Update Long COVID indicator based on date comparison
+    # Update LongCOVID indicator 
     filter_covid_dates['LL_Long_COVID_indicator'] = np.where(
         filter_covid_dates['long_covid_date'] > filter_covid_dates['twelve_months_after'],
         0,
         filter_covid_dates['LL_Long_COVID_diagnosis_indicator']
     )
     
-    # Drop the temporary column
+    # Drop the temp
     filter_covid_dates = filter_covid_dates.drop(columns=['twelve_months_after'])
     
     return filter_covid_dates
