@@ -883,7 +883,7 @@ def update_long_covid_statuss(filter_covid_dates):
     filter_covid_dates['LL_Long_COVID_indicator'] = np.where(
         filter_covid_dates['long_covid_date'] < filter_covid_dates['twelve_months_after'],
         0,
-        filter_covid_dates['LL_Long_COVID_indicator']
+        filter_covid_dates['LL_Long_COVID_diagnosis_indicator']
     )
     
     # Drop the temp
