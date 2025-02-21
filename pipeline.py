@@ -889,8 +889,8 @@ def unnamed_2(unnamed_1):
 def unnamed_3(unnamed_2):
     #df of patients to drop from final table 
     filtered_df = unnamed_2[unnamed_2['long_covid_date'] <= unnamed_2['drug_exposure_start_date']]
-    renamed_df = filtered_df.withColumnRenamed("new_person_id", "person_id")
-    return renamed_df
+    
+    return filtered_df
     
    
 
