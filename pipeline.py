@@ -173,15 +173,6 @@ def dedepe(Join_2):
     return df 
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.6239c411-bfe3-49a6-b41b-36a2649247aa"),
-    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
-)
-#if i join these two directly, i lose access to long covid date 
-# i need to gain access to it then join it 
-def dropped_patients(Final_table_3, unnamed_4):
-     return Final_table_3[~Final_table_3["new_person_id"].isin(unnamed_4["person_id"])]
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
     location=Input(rid="ri.foundry.main.dataset.efac41e8-cc64-49bf-9007-d7e22a088318"),
