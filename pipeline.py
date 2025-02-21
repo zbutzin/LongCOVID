@@ -908,6 +908,8 @@ def update_LL_Status(drop_people):
     # long_covid_date is after 12 months
     unnamed_3.loc[unnamed_3["long_covid_date"] > threshold_date, "LL_Long_COVID_diagnosis_indicator"] = 0
 
+    unnamed_3 = unnamed_3.drop(columns=['covid_date_person_id_updated'])
+
     return unnamed_3
 
     
@@ -930,6 +932,8 @@ def update_final_table(Final_table_3, update_LL_Status):
 
     # Drop the '_updated' suffix columns that were created during the merge
     merged_df.drop(columns=[col for col in merged_df if col.endswith('_updated')], inplace=True)
+
+    unnamed_3 = unnamed_3.drop(columns=['covid_date_person_id_updated'], errors='ignore')
     
     return merged_df
 
