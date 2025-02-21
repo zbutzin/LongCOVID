@@ -889,7 +889,8 @@ def unnamed_2(unnamed_1):
     unnamed_2=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
 )
 def unnamed_3(unnamed_2):
-    
+    # KEEPS patients where long covid date is AFTER drug exposure start date 
+    # same thing as EXCLUDING patients where long covid date is BEFORE drug exposure start date 
     filtered_df = unnamed_2[unnamed_2['long_covid_date'] > unnamed_2['drug_exposure_start_date']]
     
     return filtered_df
@@ -915,6 +916,13 @@ def unnamed_4(unnamed_3):
 
 def unnamed_5(rename_covid, unnamed_4):
      return rename_covid[rename_covid["covid_date_person_id"].isin(unnamed_4["person_id"])]
+
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.129b8d62-3eba-4572-ac4a-05f1bf97585c"),
+    unnamed_3=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
+)
+def unnamed_7(unnamed_3):
+    
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
