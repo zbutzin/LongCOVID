@@ -1,6 +1,17 @@
 
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027"),
+    Join1=Input(rid="ri.foundry.main.dataset.817258a4-e831-49b2-be2d-1078b061a881")
+)
+# for some reason, even after joining with the covid table, there are some people who seem to not have long covid
+# does not make sense since they have a long covid date 
+# for now, i am dropping these people 
+def Drop_zeros(Join1):
+    unnamed_1 = Join1
+    return unnamed_1[unnamed_1["LL_Long_COVID_diagnosis_indicator"] != 0]
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
     everyone_conditions_of_interest=Input(rid="ri.foundry.main.dataset.09eea354-b653-43f0-a925-bcc783bd097e"),
     everyone_devices_of_interest=Input(rid="ri.foundry.main.dataset.bd5969c3-8b84-4cae-a11c-2b3fdf027962"),
@@ -171,6 +182,19 @@ def dedepe(Join_2):
         ).orderBy(["person_id", "drug_exposure_start_date"], ascending=[True, False]) \
         .dropDuplicates(["person_id"])
     return df 
+
+@transform_pandas(
+    Output(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d"),
+    Drop_zeros=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
+)
+# KEEPS patients where long covid date is AFTER drug exposure start date 
+# same thing as EXCLUDING patients where long covid date is BEFORE drug exposure start date (which is on the doc)
+def drop_people(Drop_zeros):
+    unnamed_2 = Drop_zeros
+    filtered_df = unnamed_2[unnamed_2['long_covid_date'] > unnamed_2['drug_exposure_start_date']]
+    return filtered_df
+    
+   
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
@@ -868,38 +892,20 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027"),
-    unnamed_1=Input(rid="ri.foundry.main.dataset.817258a4-e831-49b2-be2d-1078b061a881")
-)
-def unnamed_2(unnamed_1):
-    return unnamed_1[unnamed_1["LL_Long_COVID_diagnosis_indicator"] != 0]
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d"),
-    unnamed_2=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
-)
-def unnamed_3(unnamed_2):
-    # KEEPS patients where long covid date is AFTER drug exposure start date 
-    # same thing as EXCLUDING patients where long covid date is BEFORE drug exposure start date 
-    filtered_df = unnamed_2[unnamed_2['long_covid_date'] > unnamed_2['drug_exposure_start_date']]
-    
-    return filtered_df
-    
-   
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
-    unnamed_3=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
+    drop_people=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
 )
 import pandas as pd
-def update_LL_Status(unnamed_3):
+# this df contains the updated people, now join this back into final table 3 to update these people. 
+def update_LL_Status(drop_people):
+    unnamed_3 = drop_people
     unnamed_3["long_covid_date"] = pd.to_datetime(unnamed_3["long_covid_date"])
     unnamed_3["drug_exposure_start_date"] = pd.to_datetime(unnamed_3["drug_exposure_start_date"])
 
-    # Compute 12 months after drug exposure start date
+    # 12 months after drug exposure start date
     threshold_date = unnamed_3["drug_exposure_start_date"] + pd.DateOffset(months=12)
 
-    # Update indicator where long_covid_date is beyond 12 months
+    # long_covid_date is after 12 months
     unnamed_3.loc[unnamed_3["long_covid_date"] > threshold_date, "LL_Long_COVID_diagnosis_indicator"] = 0
 
     return unnamed_3
