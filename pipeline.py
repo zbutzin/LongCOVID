@@ -175,10 +175,10 @@ def dedepe(Join_2):
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.6239c411-bfe3-49a6-b41b-36a2649247aa"),
     Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9"),
-    unnamed_3=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
+    unnamed_4=Input(rid="ri.foundry.main.dataset.13562715-62fa-444a-a37c-3573888dee00")
 )
-def dropped_patients(Final_table_3, unnamed_3):
-     return Final_table_3[~Final_table_3["new_patient_id"].isin(unnamed_3["person_id"])]
+def dropped_patients(Final_table_3, unnamed_4):
+     return Final_table_3[~Final_table_3["new_patient_id"].isin(unnamed_4["person_id"])]
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
