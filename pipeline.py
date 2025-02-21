@@ -868,11 +868,11 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.347a2d32-eb7b-48c2-879c-f22a0d092754"),
+    Output(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027"),
     unnamed_1=Input(rid="ri.foundry.main.dataset.817258a4-e831-49b2-be2d-1078b061a881")
 )
 def unnamed_2(unnamed_1):
-    
+    return unnamed_1[unnamed_1["LL_Long_COVID_diagnosis_indicator"] != 0]
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
