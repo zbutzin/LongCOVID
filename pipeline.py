@@ -917,13 +917,6 @@ def unnamed_5(rename_covid, unnamed_4):
      return rename_covid[~rename_covid["covid_date_person_id"].isin(unnamed_4["person_id"])]
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.1427c678-fe8e-44ad-8c35-f31d939293dd"),
-    unnamed_1=Input(rid="ri.foundry.main.dataset.817258a4-e831-49b2-be2d-1078b061a881")
-)
-def unnamed_7(unnamed_1):
-    
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
     filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
 )
