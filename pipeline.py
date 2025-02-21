@@ -178,7 +178,7 @@ def dedepe(Join_2):
     unnamed_4=Input(rid="ri.foundry.main.dataset.13562715-62fa-444a-a37c-3573888dee00")
 )
 def dropped_patients(Final_table_3, unnamed_4):
-     return Final_table_3[~Final_table_3["new_patient_id"].isin(unnamed_4["person_id"])]
+     return Final_table_3[~Final_table_3["new_person_id"].isin(unnamed_4["person_id"])]
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
