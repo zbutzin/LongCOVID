@@ -177,6 +177,8 @@ def dedepe(Join_2):
     Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9"),
     unnamed_4=Input(rid="ri.foundry.main.dataset.13562715-62fa-444a-a37c-3573888dee00")
 )
+#if i join these two directly, i lose access to long covid date 
+# i need to gain access to it then join it 
 def dropped_patients(Final_table_3, unnamed_4):
      return Final_table_3[~Final_table_3["new_person_id"].isin(unnamed_4["person_id"])]
 
@@ -898,6 +900,7 @@ def unnamed_3(unnamed_2):
     Output(rid="ri.foundry.main.dataset.13562715-62fa-444a-a37c-3573888dee00"),
     unnamed_3=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
 )
+#These are all people who i need to drop from final table 3 
 def unnamed_4(unnamed_3):
     rename = unnamed_3.withColumnRenamed("new_person_id", "person_id")
 
@@ -912,6 +915,13 @@ def unnamed_4(unnamed_3):
 
 def unnamed_5(rename_covid, unnamed_4):
      return rename_covid[~rename_covid["covid_date_person_id"].isin(unnamed_4["person_id"])]
+
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.52fc9e20-4cf0-4996-b429-b040cbcf0f51"),
+    unnamed_1=Input(rid="ri.foundry.main.dataset.817258a4-e831-49b2-be2d-1078b061a881")
+)
+def unnamed_7(unnamed_1):
+    
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
