@@ -904,11 +904,12 @@ def unnamed_4(unnamed_3):
     return rename
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.7e0836e7-9fa1-49ae-88a2-6d99c7c00b1f"),
-    rename_covid=Input(rid="ri.foundry.main.dataset.75b7b90a-aa84-4385-bef8-5a2184a82ea2")
+    Output(rid="ri.foundry.main.dataset.af070c85-0918-4b91-a632-50cc97e80f9b"),
+    rename_covid=Input(rid="ri.foundry.main.dataset.75b7b90a-aa84-4385-bef8-5a2184a82ea2"),
+    unnamed_4=Input(rid="ri.foundry.main.dataset.13562715-62fa-444a-a37c-3573888dee00")
 )
-def unnamed_5(rename_covid):
-    
+def unnamed_5(rename_covid, unnamed_4):
+     return rename_covid[~rename_covid["new_person_id"].isin(unnamed_4["person_id"])]
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
