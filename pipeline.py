@@ -895,11 +895,15 @@ def unnamed_3(unnamed_2):
    
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.d14a13a6-dc4c-43c6-bc94-1ab32ba0e083"),
+    Output(rid="ri.foundry.main.dataset.13562715-62fa-444a-a37c-3573888dee00"),
     unnamed_3=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
 )
 def unnamed_4(unnamed_3):
-    
+    rename = unnamed_3.withColumnRenamed("new_person_id", "person_id")
+
+    def rename_covid(Dates_For_Covid):
+    renamed_df = Dates_For_Covid.withColumnRenamed("person_id", "covid_date_person_id")
+    return renamed_df
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
