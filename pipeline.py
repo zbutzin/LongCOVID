@@ -191,7 +191,7 @@ def dedepe(Join_2):
 # same thing as EXCLUDING patients where long covid date is BEFORE drug exposure start date (which is on the doc)
 def drop_people(Drop_zeros):
     unnamed_2 = Drop_zeros
-    filtered_df = unnamed_2[unnamed_2['long_covid_date'] > unnamed_2['drug_exposure_start_date']]
+    filtered_df = unnamed_2[unnamed_2['long_covid_date'] < unnamed_2['drug_exposure_start_date']]
     return filtered_df
     
    
