@@ -908,7 +908,7 @@ def update_LL_Status(drop_people):
     # long_covid_date is after 12 months
     unnamed_3.loc[unnamed_3["long_covid_date"] > threshold_date, "LL_Long_COVID_diagnosis_indicator"] = 0
 
-    unnamed_3 = unnamed_3.drop(columns=['covid_date_person_id_updated'])
+    unnamed_3 = unnamed_3.drop(columns=['covid_date_person_id'])
 
     return unnamed_3
 
