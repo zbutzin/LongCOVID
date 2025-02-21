@@ -939,9 +939,9 @@ def update_LL_Status2(Drop_zeros):
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420"),
     Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9"),
-    update_LL_Status=Input(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d")
+    update_LL_Status2=Input(rid="ri.foundry.main.dataset.9fd8831b-4c8b-4d93-a2e4-56dc7b8d0b42")
 )
-def update_final_table(Final_table_3, update_LL_Status):
+def update_final_table(Final_table_3, update_LL_Status2):
     # Perform left join on the two dataframes based on 'new_person_id'
     merged_df = Final_table_3.merge(
         update_LL_Status, 
@@ -951,7 +951,7 @@ def update_final_table(Final_table_3, update_LL_Status):
     )
     
     # Update columns in final_table_3 with values from update_LL_status
-    for column in update_LL_Status.columns:
+    for column in update_LL_Status2.columns:
         if column != 'new_person_id':  # Skip the joining key
             if column + '_updated' in merged_df.columns:
                 merged_df[column] = merged_df[column + '_updated'].combine_first(merged_df[column])
