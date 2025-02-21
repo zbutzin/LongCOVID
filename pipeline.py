@@ -918,10 +918,21 @@ def unnamed_5(rename_covid, unnamed_4):
      return rename_covid[rename_covid["covid_date_person_id"].isin(unnamed_4["person_id"])]
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.129b8d62-3eba-4572-ac4a-05f1bf97585c"),
+    Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
     unnamed_3=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
 )
-def unnamed_7(unnamed_3):
+def update_LL_Status(unnamed_3):
+    unnamed_3["long_covid_date"] = pd.to_datetime(unnamed_3["long_covid_date"])
+    unnamed_3["drug_exposure_start_date"] = pd.to_datetime(unnamed_3["drug_exposure_start_date"])
+
+    # Compute 12 months after drug exposure start date
+    threshold_date = unnamed_3["drug_exposure_start_date"] + pd.DateOffset(months=12)
+
+    # Update indicator where long_covid_date is beyond 12 months
+    unnamed_3.loc[unnamed_3["long_covid_date"] > threshold_date, "LL_Long_COVID_diagnosis_indicator"] = 0
+
+    return unnamed_3
+
     
 
 @transform_pandas(
