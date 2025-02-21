@@ -892,13 +892,6 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.3d728d22-fce2-427a-817e-169708a1edad"),
-    Drop_zeros=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
-)
-def unnamed_1(Drop_zeros):
-    
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
     drop_people=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
 )
@@ -918,6 +911,28 @@ def update_LL_Status(drop_people):
     unnamed_3 = unnamed_3.drop(columns=['covid_date_person_id'])
 
     return unnamed_3
+
+    
+
+@transform_pandas(
+    Output(rid="ri.foundry.main.dataset.9fd8831b-4c8b-4d93-a2e4-56dc7b8d0b42"),
+    Drop_zeros=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
+)
+
+# this df contains the updated people, now join this back into final table 3 to update these people. 
+def update_LL_Status2(Drop_zeros):
+    Drop_zeros["long_covid_date"] = pd.to_datetime(Drop_zeros["long_covid_date"])
+    Drop_zeros["drug_exposure_start_date"] = pd.to_datetime(Drop_zeros["drug_exposure_start_date"])
+
+    # 12 months after drug exposure start date
+    threshold_date = Drop_zeros["drug_exposure_start_date"] + pd.DateOffset(months=12)
+
+    # long_covid_date is after 12 months
+    Drop_zeros.loc[Drop_zeros["long_covid_date"] > threshold_date, "LL_Long_COVID_diagnosis_indicator"] = 0
+
+    Drop_zeros = Drop_zeros.drop(columns=['covid_date_person_id'])
+
+    return Drop_zeros
 
     
 
