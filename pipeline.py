@@ -918,7 +918,7 @@ def update_LL_Status(drop_people):
     Output(rid="ri.foundry.main.dataset.9fd8831b-4c8b-4d93-a2e4-56dc7b8d0b42"),
     Drop_zeros=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
 )
-
+import pandas as pd
 # this df contains the updated people, now join this back into final table 3 to update these people. 
 def update_LL_Status2(Drop_zeros):
     Drop_zeros["long_covid_date"] = pd.to_datetime(Drop_zeros["long_covid_date"])
