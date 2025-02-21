@@ -908,6 +908,8 @@ def unnamed_4(unnamed_3):
     rename_covid=Input(rid="ri.foundry.main.dataset.75b7b90a-aa84-4385-bef8-5a2184a82ea2"),
     unnamed_4=Input(rid="ri.foundry.main.dataset.13562715-62fa-444a-a37c-3573888dee00")
 )
+# this table contains the long covid date info for people who i need to keep in the table 
+
 def unnamed_5(rename_covid, unnamed_4):
      return rename_covid[~rename_covid["covid_date_person_id"].isin(unnamed_4["person_id"])]
 
