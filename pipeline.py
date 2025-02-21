@@ -875,6 +875,13 @@ def unnamed_2(unnamed_1):
     return unnamed_1[unnamed_1["LL_Long_COVID_diagnosis_indicator"] != 0]
 
 @transform_pandas(
+    Output(rid="ri.vector.main.execute.fb6d439e-edee-418b-aa18-818e9ee49be2"),
+    unnamed_2=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
+)
+def unnamed_3(unnamed_2):
+    
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
     filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
 )
