@@ -919,21 +919,24 @@ def update_LL_Status(drop_people):
     Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9"),
     update_LL_Status=Input(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d")
 )
-import pandas as pd
-
 def update_final_table(Final_table_3, update_LL_Status):
-    # Perform an inner join on the two dataframes based on 'new_person_id'
-    merged_df = Final_table_3.merge(update_LL_Status, on='new_person_id', how='left', suffixes=('', '_updated'))
-
-    # Update columns in final_table_3 with values from update_LL_status where new_person_id matches
+    # Perform left join on the two dataframes based on 'new_person_id'
+    merged_df = Final_table_3.merge(
+        update_LL_Status, 
+        on='new_person_id', 
+        how='left', 
+        suffixes=('', '_updated')
+    )
+    
+    # Update columns in final_table_3 with values from update_LL_status
     for column in update_LL_Status.columns:
-        if column != 'new_person_id':
-            merged_df[column] = merged_df[column + '_updated'].combine_first(merged_df[column])
-
-    # Drop the '_updated' suffix columns that were created during the merge
-    merged_df.drop(columns=[col for col in merged_df if col.endswith('_updated')], inplace=True)
-
-    unnamed_3 = unnamed_3.drop(columns=['covid_date_person_id_updated'], errors='ignore')
+        if column != 'new_person_id':  # Skip the joining key
+            if column + '_updated' in merged_df.columns:
+                merged_df[column] = merged_df[column + '_updated'].combine_first(merged_df[column])
+    
+    # Drop all columns with '_updated' suffix
+    updated_cols = [col for col in merged_df.columns if col.endswith('_updated')]
+    merged_df = merged_df.drop(columns=updated_cols, errors='ignore')
     
     return merged_df
 
