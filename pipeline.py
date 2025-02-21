@@ -921,6 +921,7 @@ def unnamed_5(rename_covid, unnamed_4):
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
     unnamed_3=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
 )
+import pandas as pd
 def update_LL_Status(unnamed_3):
     unnamed_3["long_covid_date"] = pd.to_datetime(unnamed_3["long_covid_date"])
     unnamed_3["drug_exposure_start_date"] = pd.to_datetime(unnamed_3["drug_exposure_start_date"])
