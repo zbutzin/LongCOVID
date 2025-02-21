@@ -174,8 +174,7 @@ def dedepe(Join_2):
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.6239c411-bfe3-49a6-b41b-36a2649247aa"),
-    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9"),
-    unnamed_4=Input(rid="ri.foundry.main.dataset.13562715-62fa-444a-a37c-3573888dee00")
+    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
 )
 #if i join these two directly, i lose access to long covid date 
 # i need to gain access to it then join it 
@@ -896,16 +895,6 @@ def unnamed_3(unnamed_2):
     return filtered_df
     
    
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.13562715-62fa-444a-a37c-3573888dee00"),
-    unnamed_3=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
-)
-#These are all people who i need to drop from final table 3 
-def unnamed_4(unnamed_3):
-    rename = unnamed_3.withColumnRenamed("new_person_id", "person_id")
-
-    return rename
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
