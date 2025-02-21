@@ -173,6 +173,14 @@ def dedepe(Join_2):
     return df 
 
 @transform_pandas(
+    Output(rid="ri.vector.main.execute.3a097f67-7ac5-41c2-a2bb-c8c63328dd49"),
+    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9"),
+    unnamed_3=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
+)
+def dropped_patients(Final_table_3, unnamed_3):
+    
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
     location=Input(rid="ri.foundry.main.dataset.efac41e8-cc64-49bf-9007-d7e22a088318"),
@@ -881,15 +889,10 @@ def unnamed_2(unnamed_1):
 def unnamed_3(unnamed_2):
     #df of patients to drop from final table 
     filtered_df = unnamed_2[unnamed_2['long_covid_date'] <= unnamed_2['drug_exposure_start_date']]
+    renamed_df = filtered_df.withColumnRenamed("new_person_id", "person_id")
+    return renamed_df
     
-    return filtered_df
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.3a097f67-7ac5-41c2-a2bb-c8c63328dd49"),
-    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
-)
-def unnamed_4(Final_table_3):
-    
+   
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
