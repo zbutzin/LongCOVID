@@ -944,7 +944,7 @@ def update_LL_Status2(Drop_zeros):
 def update_final_table(Final_table_3, update_LL_Status2):
     # Perform left join on the two dataframes based on 'new_person_id'
     merged_df = Final_table_3.merge(
-        update_LL_Status, 
+        update_LL_Status2, 
         on='new_person_id', 
         how='left', 
         suffixes=('', '_updated')
