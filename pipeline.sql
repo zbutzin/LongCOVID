@@ -43,15 +43,3 @@ FROM rename_2 as ft
 JOIN rename_covid as rc
     ON ft.new_person_id = rc.covid_date_person_id; 
 
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.7e7b4a08-6600-43f0-a51c-6f52c465f123"),
-    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9"),
-    unnamed_5=Input(rid="ri.foundry.main.dataset.af070c85-0918-4b91-a632-50cc97e80f9b")
-)
-
-SELECT ft.*, 
-       pa.*
-FROM Final_table_3 as ft
-JOIN unnamed_5 AS pa     
-    ON ft.new_person_id = pa.covid_date_person_id
-
