@@ -43,10 +43,3 @@ SELECT *
 FROM condition_occurrence_1
 where condition_concept_id in (705076, 710706)
 
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.2a0c1ecf-8407-4d6e-974b-c1cf14de678e"),
-    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
-)
-SELECT *
-FROM Final_table_3
-
