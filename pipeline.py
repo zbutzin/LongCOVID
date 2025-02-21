@@ -184,19 +184,6 @@ def dedepe(Join_2):
     return df 
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d"),
-    Drop_zeros=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
-)
-# KEEPS patients where long covid date is AFTER drug exposure start date 
-# same thing as EXCLUDING patients where long covid date is BEFORE drug exposure start date (which is on the doc)
-def drop_people(Drop_zeros):
-    unnamed_2 = Drop_zeros
-    filtered_df = unnamed_2[unnamed_2['long_covid_date'] < unnamed_2['drug_exposure_start_date']]
-    return filtered_df
-    
-   
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
     location=Input(rid="ri.foundry.main.dataset.efac41e8-cc64-49bf-9007-d7e22a088318"),
@@ -868,6 +855,20 @@ def filter_covid_dates(dedepe):
     return filtered_df
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d"),
+    Drop_zeros=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
+)
+# KEEPS patients where long covid date is AFTER drug exposure start date 
+# same thing as EXCLUDING patients where long covid date is BEFORE drug exposure start date (which is on the doc)
+# use this df to drop those who match this criteria 
+def people_to_drop(Drop_zeros):
+    unnamed_2 = Drop_zeros
+    filtered_df = unnamed_2[unnamed_2['long_covid_date'] < unnamed_2['drug_exposure_start_date']]
+    return filtered_df
+    
+   
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5"),
     Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
 )
@@ -892,13 +893,20 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
+    Output(rid="ri.vector.main.execute.a0a3ffb8-b9f1-48da-ab83-6e5c4bca3058"),
+    update_final_table=Input(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420")
+)
+def unnamed_1(update_final_table):
+    
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
-    drop_people=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
+    people_to_drop=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
 )
 import pandas as pd
 # this df contains the updated people, now join this back into final table 3 to update these people. 
-def update_LL_Status(drop_people):
-    unnamed_3 = drop_people
+def update_LL_Status(people_to_drop):
+    unnamed_3 = people_to_drop
     unnamed_3["long_covid_date"] = pd.to_datetime(unnamed_3["long_covid_date"])
     unnamed_3["drug_exposure_start_date"] = pd.to_datetime(unnamed_3["drug_exposure_start_date"])
 
