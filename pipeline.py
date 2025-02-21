@@ -895,6 +895,13 @@ def unnamed_3(unnamed_2):
    
 
 @transform_pandas(
+    Output(rid="ri.vector.main.execute.d14a13a6-dc4c-43c6-bc94-1ab32ba0e083"),
+    unnamed_3=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
+)
+def unnamed_4(unnamed_3):
+    
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
     filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
 )
