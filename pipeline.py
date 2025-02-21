@@ -889,8 +889,8 @@ def unnamed_2(unnamed_1):
     unnamed_2=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
 )
 def unnamed_3(unnamed_2):
-    #df of patients to drop from final table
-    filtered_df = unnamed_2[unnamed_2['long_covid_date'] <= unnamed_2['drug_exposure_start_date']]
+    
+    filtered_df = unnamed_2[unnamed_2['long_covid_date'] > unnamed_2['drug_exposure_start_date']]
     
     return filtered_df
     
