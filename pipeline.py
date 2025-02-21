@@ -875,11 +875,14 @@ def unnamed_2(unnamed_1):
     return unnamed_1[unnamed_1["LL_Long_COVID_diagnosis_indicator"] != 0]
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.fb6d439e-edee-418b-aa18-818e9ee49be2"),
+    Output(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d"),
     unnamed_2=Input(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027")
 )
 def unnamed_3(unnamed_2):
+    #df of patients to drop from final table 
+    filtered_df = unnamed_2[unnamed_2['long_covid_date'] <= unnamed_2['drug_exposure_start_date']]
     
+    return filtered_df
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
