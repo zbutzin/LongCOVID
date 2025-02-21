@@ -901,9 +901,7 @@ def unnamed_3(unnamed_2):
 def unnamed_4(unnamed_3):
     rename = unnamed_3.withColumnRenamed("new_person_id", "person_id")
 
-    def rename_covid(Dates_For_Covid):
-    renamed_df = Dates_For_Covid.withColumnRenamed("person_id", "covid_date_person_id")
-    return renamed_df
+    return rename
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
