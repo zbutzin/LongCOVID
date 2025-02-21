@@ -184,6 +184,19 @@ def dedepe(Join_2):
     return df 
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.c4e74e7e-51d3-4981-b3bb-047aef7f81e8"),
+    people_to_drop=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d"),
+    update_final_table=Input(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420")
+)
+import pandas as pd
+
+def drop_people_from_final_table(update_final_table, people_to_drop):
+    # Ensure 'person_id' is present in both dataframes
+    update_final_table = update_final_table[~update_final_table['new_person_id'].isin(people_to_drop['new_person_id'])]
+    
+    return update_final_table
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
     location=Input(rid="ri.foundry.main.dataset.efac41e8-cc64-49bf-9007-d7e22a088318"),
@@ -891,13 +904,6 @@ from pyspark.sql.types import *
 def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.a0a3ffb8-b9f1-48da-ab83-6e5c4bca3058"),
-    update_final_table=Input(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420")
-)
-def unnamed_1(update_final_table):
-    
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
