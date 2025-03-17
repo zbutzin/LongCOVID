@@ -885,10 +885,10 @@ def people_to_drop(Drop_zeros):
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5"),
-    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9")
+    FINAL_METFORMIN_DF=Input(rid="ri.foundry.main.dataset.1871bb37-980e-40b2-829a-394723de716e")
 )
-def rename_2( Final_table_3):
-    renamed_df = Final_table_3.withColumnRenamed("pcos", "pcos_new")
+def rename_2(FINAL_METFORMIN_DF):
+    renamed_df = FINAL_METFORMIN_DF.withColumnRenamed("pcos", "pcos_new")
     return renamed_df
 
 @transform_pandas(
@@ -961,12 +961,12 @@ def update_LL_Status2(Drop_zeros):
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420"),
-    Final_table_3=Input(rid="ri.foundry.main.dataset.201fcac4-0b33-4382-9d42-5bc27a85a0c9"),
+    FINAL_METFORMIN_DF=Input(rid="ri.foundry.main.dataset.1871bb37-980e-40b2-829a-394723de716e"),
     update_LL_Status2=Input(rid="ri.foundry.main.dataset.9fd8831b-4c8b-4d93-a2e4-56dc7b8d0b42")
 )
-def update_final_table(Final_table_3, update_LL_Status2):
+def update_final_table(update_LL_Status2, FINAL_METFORMIN_DF):
     # Perform left join on the two dataframes based on 'new_person_id'
-    merged_df = Final_table_3.merge(
+    merged_df = FINAL_METFORMIN_DF.merge(
         update_LL_Status2, 
         on='new_person_id', 
         how='left', 
