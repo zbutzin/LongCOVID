@@ -44,9 +44,10 @@ FROM condition_occurrence_1
 where condition_concept_id in (705076, 710706)
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.e5a5e8aa-a716-4b15-80cf-893891d6096a"),
+    Output(rid="ri.foundry.main.dataset.9b806f31-93f3-4cbd-a8c9-d8f9ff5d7ab6"),
     FINAL_TABLE=Input(rid="ri.foundry.main.dataset.c4e74e7e-51d3-4981-b3bb-047aef7f81e8")
 )
 SELECT *
 FROM FINAL_TABLE
+WHERE PCOS_indicator = 1 OR PREDIABETESRF_indicator = 1;
 
