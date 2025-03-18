@@ -52,9 +52,18 @@ FROM condition_occurrence_1
 where condition_concept_id in (705076, 710706)
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.05e8be07-8d3f-444b-b13b-91f7a64f9f77"),
-    rename_3=Input(rid="ri.foundry.main.dataset.9d1249a8-3d78-452e-b0f4-aa2ee61b149d")
+    Output(rid="ri.foundry.main.dataset.28b4c679-2010-489d-889f-ed8a7e0ff3dd"),
+    all_patients_fact_day_table_LDS=Input(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
+    rename_3=Input(rid="ri.foundry.main.dataset.9d1249a8-3d78-452e-b0f4-aa2ee61b149d"),
+    rename_covid=Input(rid="ri.foundry.main.dataset.75b7b90a-aa84-4385-bef8-5a2184a82ea2")
 )
-SELECT *
-FROM rename_3
+SELECT 
+    ft.*, 
+    ap.*,
+    rc.*
+FROM rename_3 AS ft
+JOIN all_patients_fact_day_table_LDS AS ap
+    ON ft.new_person_id = ap.person_id
+JOIN rename_covid AS rc
+    ON ft.new_person_id = rc.covid_date_person_id;
 
