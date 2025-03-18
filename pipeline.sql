@@ -9,13 +9,6 @@ FROM LongCovidDates
 GROUP BY person_id
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.9b806f31-93f3-4cbd-a8c9-d8f9ff5d7ab6")
-)
-SELECT *
-FROM Semi_final
-WHERE PCOS_indicator = 1 OR PREDIABETESRF_indicator = 1;
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.817258a4-e831-49b2-be2d-1078b061a881"),
     rename_2=Input(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5"),
     rename_covid=Input(rid="ri.foundry.main.dataset.75b7b90a-aa84-4385-bef8-5a2184a82ea2")
