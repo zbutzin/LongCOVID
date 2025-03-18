@@ -13,13 +13,14 @@ def Drop_zeros(Join1):
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.74742cdc-2e2a-47d0-9a0e-49597551ba54"),
+    people_to_drop=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d"),
     update_final_table=Input(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420")
 )
 import pandas as pd
 
-def Final_metformin_table( update_final_table, update_LL_Status):
+def Final_metformin_table(update_final_table, people_to_drop):
     
-    update_final_table = update_final_table[~update_final_table['new_person_id'].isin(update_LL_Status['new_person_id'])]
+    update_final_table = update_final_table[~update_final_table['new_person_id'].isin(people_to_drop['new_person_id'])]
     
     return update_final_table
 
