@@ -20,7 +20,7 @@ import pandas as pd
 #changed around 29,700 people from 1 to 0 for long covid
 #dropped ~ 29000 people
 #contains chnaged covid status + droped patients.  
-def FINAL_TABLE(update_final_table, people_to_drop):
+def Semi_final(update_final_table, people_to_drop):
     
     update_final_table = update_final_table[~update_final_table['new_person_id'].isin(people_to_drop['new_person_id'])]
     

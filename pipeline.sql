@@ -9,6 +9,14 @@ FROM LongCovidDates
 GROUP BY person_id
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.9b806f31-93f3-4cbd-a8c9-d8f9ff5d7ab6"),
+    Semi_final=Input(rid="ri.foundry.main.dataset.c4e74e7e-51d3-4981-b3bb-047aef7f81e8")
+)
+SELECT *
+FROM Semi_final
+WHERE PCOS_indicator = 1 OR PREDIABETESRF_indicator = 1;
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.817258a4-e831-49b2-be2d-1078b061a881"),
     rename_2=Input(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5"),
     rename_covid=Input(rid="ri.foundry.main.dataset.75b7b90a-aa84-4385-bef8-5a2184a82ea2")
@@ -42,12 +50,4 @@ JOIN rename_covid AS rc
 SELECT *
 FROM condition_occurrence_1
 where condition_concept_id in (705076, 710706)
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.9b806f31-93f3-4cbd-a8c9-d8f9ff5d7ab6"),
-    FINAL_TABLE=Input(rid="ri.foundry.main.dataset.c4e74e7e-51d3-4981-b3bb-047aef7f81e8")
-)
-SELECT *
-FROM FINAL_TABLE
-WHERE PCOS_indicator = 1 OR PREDIABETESRF_indicator = 1;
 
