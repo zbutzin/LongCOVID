@@ -51,3 +51,10 @@ SELECT *
 FROM condition_occurrence_1
 where condition_concept_id in (705076, 710706)
 
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.6a18a9ef-3b98-435e-8a81-9c179ddfe24c"),
+    FINAL_METFORMIN_DF=Input(rid="ri.foundry.main.dataset.1871bb37-980e-40b2-829a-394723de716e")
+)
+SELECT *
+FROM FINAL_METFORMIN_DF
+
