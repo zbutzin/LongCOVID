@@ -892,6 +892,14 @@ def rename_2(Final_table_2_copied_1):
     return renamed_df
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.9d1249a8-3d78-452e-b0f4-aa2ee61b149d"),
+    FINAL_METFORMIN_DF=Input(rid="ri.foundry.main.dataset.1871bb37-980e-40b2-829a-394723de716e")
+)
+def rename_3(FINAL_METFORMIN_DF):
+    renamed_df = FINAL_METFORMIN_DF.withColumnRenamed("pcos", "pcos_new")
+    return renamed_df
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.75b7b90a-aa84-4385-bef8-5a2184a82ea2"),
     Dates_For_Covid=Input(rid="ri.foundry.main.dataset.b8afeda9-8ab4-4fe7-aa29-379461f4afe2")
 )
@@ -906,13 +914,6 @@ from pyspark.sql.types import *
 def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.0432251c-4b8a-410c-90f8-ca62e8ca738b"),
-    FINAL_METFORMIN_DF=Input(rid="ri.foundry.main.dataset.1871bb37-980e-40b2-829a-394723de716e")
-)
-def unnamed_1(FINAL_METFORMIN_DF):
-    
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
