@@ -199,6 +199,13 @@ def dedepe(Join_2):
     return df 
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.0632c7d4-6a31-459b-8f15-b7ba92c051e6"),
+    Join2=Input(rid="ri.foundry.main.dataset.28b4c679-2010-489d-889f-ed8a7e0ff3dd")
+)
+def drop0(Join2):
+    return Join2[Join2["LL_Long_COVID_diagnosis_indicator"] != 0]
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
     location=Input(rid="ri.foundry.main.dataset.efac41e8-cc64-49bf-9007-d7e22a088318"),
