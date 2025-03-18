@@ -193,7 +193,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.functions import col
 def dedepe(Join_2):
     df = Join_2.filter(
-        col("drug_exposure_start_date") > "2021-12-31"
+        col("drug_exposure_start_date") > "2021-10-01"
         ).orderBy(["person_id", "drug_exposure_start_date"], ascending=[True, False]) \
         .dropDuplicates(["person_id"])
     return df 
