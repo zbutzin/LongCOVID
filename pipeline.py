@@ -924,19 +924,25 @@ def rename_covid(Dates_For_Covid):
     return renamed_df
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.12d09afa-63c6-4418-9e6e-1603e48ebd7d"),
+    drop_people=Input(rid="ri.foundry.main.dataset.ffca57cd-56e3-48e6-b355-6761f5ad4b50"),
+    update_covid=Input(rid="ri.foundry.main.dataset.9dedcbf1-0309-468c-87cf-13f6214fade1")
+)
+import pandas as pd
+
+def testfinal(update_covid, drop_people):
+    
+    update_covid = update_covid[~update_covid['new_person_id'].isin(drop_people['new_person_id'])]
+    
+    return update_covid
+
+@transform_pandas(
     Output(rid="ri.vector.main.execute.9b0d833d-bb7b-40e1-a629-6248804b664a")
 )
 from pyspark.sql.types import *
 def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.d394c851-2642-4b1f-ab30-18acb6bc6801"),
-    update_covid=Input(rid="ri.foundry.main.dataset.9dedcbf1-0309-468c-87cf-13f6214fade1")
-)
-def unnamed_1(update_covid):
-    
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
