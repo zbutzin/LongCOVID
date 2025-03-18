@@ -206,6 +206,15 @@ def drop0(Join2):
     return Join2[Join2["LL_Long_COVID_diagnosis_indicator"] != 0]
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.ffca57cd-56e3-48e6-b355-6761f5ad4b50"),
+    drop0=Input(rid="ri.foundry.main.dataset.0632c7d4-6a31-459b-8f15-b7ba92c051e6")
+)
+def drop_people(drop0):
+    unnamed_2 = drop0
+    filtered_df = unnamed_2[unnamed_2['long_covid_date'] < unnamed_2['drug_exposure_start_date']]
+    return filtered_df
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.d5cd793d-2c52-4610-afc2-b599566561aa"),
     concept_set_members=Input(rid="ri.foundry.main.dataset.e670c5ad-42ca-46a2-ae55-e917e3e161b6"),
     location=Input(rid="ri.foundry.main.dataset.efac41e8-cc64-49bf-9007-d7e22a088318"),
@@ -921,13 +930,6 @@ from pyspark.sql.types import *
 def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.d44a0bf6-458a-433b-a134-e8434ee180f5"),
-    drop0=Input(rid="ri.foundry.main.dataset.0632c7d4-6a31-459b-8f15-b7ba92c051e6")
-)
-def unnamed_1(drop0):
-    
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
