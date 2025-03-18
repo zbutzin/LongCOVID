@@ -28,6 +28,17 @@ JOIN rename_covid as rc
     ON ft.new_person_id = rc.covid_date_person_id; 
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.28b4c679-2010-489d-889f-ed8a7e0ff3dd"),
+    rename_3=Input(rid="ri.foundry.main.dataset.9d1249a8-3d78-452e-b0f4-aa2ee61b149d"),
+    rename_covid=Input(rid="ri.foundry.main.dataset.75b7b90a-aa84-4385-bef8-5a2184a82ea2")
+)
+SELECT ft.*, 
+       rc.*
+FROM rename_3 as ft
+JOIN rename_covid as rc
+    ON ft.new_person_id = rc.covid_date_person_id; 
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3"),
     all_patients_fact_day_table_LDS=Input(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
     rename_2=Input(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5"),
@@ -52,13 +63,9 @@ FROM condition_occurrence_1
 where condition_concept_id in (705076, 710706)
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.28b4c679-2010-489d-889f-ed8a7e0ff3dd"),
-    rename_3=Input(rid="ri.foundry.main.dataset.9d1249a8-3d78-452e-b0f4-aa2ee61b149d"),
-    rename_covid=Input(rid="ri.foundry.main.dataset.75b7b90a-aa84-4385-bef8-5a2184a82ea2")
+    Output(rid="ri.vector.main.execute.486e23ef-42d1-4592-9b31-65bff1aaed14"),
+    Join2=Input(rid="ri.foundry.main.dataset.28b4c679-2010-489d-889f-ed8a7e0ff3dd")
 )
-SELECT ft.*, 
-       rc.*
-FROM rename_3 as ft
-JOIN rename_covid as rc
-    ON ft.new_person_id = rc.covid_date_person_id; 
+SELECT *
+FROM Join2
 
