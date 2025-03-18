@@ -12,6 +12,19 @@ def Drop_zeros(Join1):
     return unnamed_1[unnamed_1["LL_Long_COVID_diagnosis_indicator"] != 0]
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.74742cdc-2e2a-47d0-9a0e-49597551ba54"),
+    update_LL_Status=Input(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
+    update_final_table=Input(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420")
+)
+import pandas as pd
+
+def Final_metformin_table( update_final_table, update_LL_Status):
+    
+    update_final_table = update_final_table[~update_final_table['new_person_id'].isin(update_LL_Status['new_person_id'])]
+    
+    return update_final_table
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
     everyone_conditions_of_interest=Input(rid="ri.foundry.main.dataset.09eea354-b653-43f0-a925-bcc783bd097e"),
     everyone_devices_of_interest=Input(rid="ri.foundry.main.dataset.bd5969c3-8b84-4cae-a11c-2b3fdf027962"),
@@ -928,13 +941,6 @@ from pyspark.sql.types import *
 def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.d35e6cc1-fc93-452d-95a5-64ff6ab0e6dd"),
-    update_final_table=Input(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420")
-)
-def unnamed_1(update_final_table):
-    
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
