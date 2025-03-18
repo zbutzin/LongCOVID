@@ -932,6 +932,13 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
+    Output(rid="ri.vector.main.execute.d394c851-2642-4b1f-ab30-18acb6bc6801"),
+    update_covid=Input(rid="ri.foundry.main.dataset.9dedcbf1-0309-468c-87cf-13f6214fade1")
+)
+def unnamed_1(update_covid):
+    
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
     people_to_drop=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
 )
