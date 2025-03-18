@@ -12,21 +12,6 @@ def Drop_zeros(Join1):
     return unnamed_1[unnamed_1["LL_Long_COVID_diagnosis_indicator"] != 0]
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.c4e74e7e-51d3-4981-b3bb-047aef7f81e8"),
-    people_to_drop=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d"),
-    update_final_table=Input(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420")
-)
-import pandas as pd
-#changed around 29,700 people from 1 to 0 for long covid
-#dropped ~ 29000 people
-#contains chnaged covid status + droped patients.  
-def Semi_final(update_final_table, people_to_drop):
-    
-    update_final_table = update_final_table[~update_final_table['new_person_id'].isin(people_to_drop['new_person_id'])]
-    
-    return update_final_table
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c331e73-d93a-4316-922e-82b4d06b1131"),
     everyone_conditions_of_interest=Input(rid="ri.foundry.main.dataset.09eea354-b653-43f0-a925-bcc783bd097e"),
     everyone_devices_of_interest=Input(rid="ri.foundry.main.dataset.bd5969c3-8b84-4cae-a11c-2b3fdf027962"),

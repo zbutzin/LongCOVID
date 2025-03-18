@@ -9,8 +9,7 @@ FROM LongCovidDates
 GROUP BY person_id
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.9b806f31-93f3-4cbd-a8c9-d8f9ff5d7ab6"),
-    Semi_final=Input(rid="ri.foundry.main.dataset.c4e74e7e-51d3-4981-b3bb-047aef7f81e8")
+    Output(rid="ri.foundry.main.dataset.9b806f31-93f3-4cbd-a8c9-d8f9ff5d7ab6")
 )
 SELECT *
 FROM Semi_final
