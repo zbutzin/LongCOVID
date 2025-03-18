@@ -908,6 +908,13 @@ def unnamed():
     return spark.createDataFrame([[]], schema=schema)
 
 @transform_pandas(
+    Output(rid="ri.vector.main.execute.0432251c-4b8a-410c-90f8-ca62e8ca738b"),
+    FINAL_METFORMIN_DF=Input(rid="ri.foundry.main.dataset.1871bb37-980e-40b2-829a-394723de716e")
+)
+def unnamed_1(FINAL_METFORMIN_DF):
+    
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
     people_to_drop=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
 )
