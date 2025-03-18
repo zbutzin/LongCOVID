@@ -185,18 +185,6 @@ def customized_concept_set_input(custom_concept_sets, LL_DO_NOT_DELETE_REQUIRED_
 from pyspark.sql import functions as F
 
 @transform_pandas(
-    Output(rid="ri.foundry.main.dataset.d7db2751-1f46-4bb2-a5dd-cf0ef3ed4278"),
-    Join_2=Input(rid="ri.foundry.main.dataset.edb63160-f46d-4fd2-84a4-a1528eabdbd3")
-)
-from pyspark.sql.functions import col
-def dedepe(Join_2):
-    df = Join_2.filter(
-        col("drug_exposure_start_date") > "2021-10-01"
-        ).orderBy(["person_id", "drug_exposure_start_date"], ascending=[True, False]) \
-        .dropDuplicates(["person_id"])
-    return df 
-
-@transform_pandas(
     Output(rid="ri.foundry.main.dataset.0632c7d4-6a31-459b-8f15-b7ba92c051e6"),
     Join2=Input(rid="ri.foundry.main.dataset.28b4c679-2010-489d-889f-ed8a7e0ff3dd")
 )
