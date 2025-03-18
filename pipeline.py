@@ -1039,27 +1039,3 @@ def update_final_table(update_LL_Status2, Final_table_2_copied_1):
     
     return merged_df
 
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.ac3ab840-7c81-4082-a322-beb71227c40b"),
-    filter_covid_dates=Input(rid="ri.foundry.main.dataset.94dce3b8-b337-45ae-87f2-40661cb5e181")
-)
-import pandas as pd
-from datetime import datetime
-import numpy as np
-
-def update_long_covid_statuss(filter_covid_dates):
-    # Add 12 months to drug exposure start date
-    filter_covid_dates['twelve_months_after'] = filter_covid_dates['drug_exposure_start_date'] + pd.DateOffset(months=12)
-    
-    # Update LongCOVID indicator 
-    filter_covid_dates['LL_Long_COVID_indicator'] = np.where(
-        filter_covid_dates['long_covid_date'] < filter_covid_dates['twelve_months_after'],
-        0,
-        filter_covid_dates['LL_Long_COVID_diagnosis_indicator']
-    )
-    
-    # Drop the temp
-    filter_covid_dates = filter_covid_dates.drop(columns=['twelve_months_after'])
-    
-    return filter_covid_dates
-
