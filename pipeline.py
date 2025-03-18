@@ -953,6 +953,32 @@ def update_LL_Status2(Drop_zeros):
     
 
 @transform_pandas(
+    Output(rid="ri.foundry.main.dataset.9dedcbf1-0309-468c-87cf-13f6214fade1"),
+    FINAL_METFORMIN_DF=Input(rid="ri.foundry.main.dataset.1871bb37-980e-40b2-829a-394723de716e"),
+    update_LL_Status2=Input(rid="ri.foundry.main.dataset.9fd8831b-4c8b-4d93-a2e4-56dc7b8d0b42")
+)
+def update_covid(update_LL_Status2, FINAL_METFORMIN_DF):
+    # Perform left join on the two dataframes based on 'new_person_id'
+    merged_df = FINAL_METFORMIN_DF.merge(
+        update_LL_Status2, 
+        on='new_person_id', 
+        how='left', 
+        suffixes=('', '_updated')
+    )
+    
+    # Update columns in final_table_3 with values from update_LL_status
+    for column in update_LL_Status2.columns:
+        if column != 'new_person_id':  # Skip the joining key
+            if column + '_updated' in merged_df.columns:
+                merged_df[column] = merged_df[column + '_updated'].combine_first(merged_df[column])
+    
+    # Drop all columns with '_updated' suffix
+    updated_cols = [col for col in merged_df.columns if col.endswith('_updated')]
+    merged_df = merged_df.drop(columns=updated_cols, errors='ignore')
+    
+    return merged_df
+
+@transform_pandas(
     Output(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420"),
     Final_table_2_copied_1=Input(rid="ri.foundry.main.dataset.916a2961-f7fe-4a9d-a261-099bca212f2b"),
     update_LL_Status2=Input(rid="ri.foundry.main.dataset.9fd8831b-4c8b-4d93-a2e4-56dc7b8d0b42")
