@@ -13,7 +13,6 @@ def Drop_zeros(Join1):
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.74742cdc-2e2a-47d0-9a0e-49597551ba54"),
-    update_LL_Status=Input(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
     update_final_table=Input(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420")
 )
 import pandas as pd
@@ -919,29 +918,6 @@ from pyspark.sql.types import *
 def unnamed():
     schema = StructType([])
     return spark.createDataFrame([[]], schema=schema)
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.5c9d184c-7d94-4f6d-8608-7499b8a0df9d"),
-    people_to_drop=Input(rid="ri.foundry.main.dataset.863a6146-e738-45fb-946a-1b1bafc8957d")
-)
-import pandas as pd
-# this df contains the updated people, now join this back into final table 3 to update these people. 
-def update_LL_Status(people_to_drop):
-    unnamed_3 = people_to_drop
-    unnamed_3["long_covid_date"] = pd.to_datetime(unnamed_3["long_covid_date"])
-    unnamed_3["drug_exposure_start_date"] = pd.to_datetime(unnamed_3["drug_exposure_start_date"])
-
-    # 12 months after drug exposure start date
-    threshold_date = unnamed_3["drug_exposure_start_date"] + pd.DateOffset(months=12)
-
-    # long_covid_date is after 12 months
-    unnamed_3.loc[unnamed_3["long_covid_date"] > threshold_date, "LL_Long_COVID_diagnosis_indicator"] = 0
-
-    unnamed_3 = unnamed_3.drop(columns=['covid_date_person_id'])
-
-    return unnamed_3
-
-    
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.9fd8831b-4c8b-4d93-a2e4-56dc7b8d0b42"),
