@@ -17,7 +17,7 @@ def Drop_zeros(Join1):
     update_final_table=Input(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420")
 )
 import pandas as pd
-
+#dropped 89 people, and changed 1203 peoples Long covid Status 
 def Final_metformin_table(update_final_table, people_to_drop):
     
     update_final_table = update_final_table[~update_final_table['new_person_id'].isin(people_to_drop['new_person_id'])]
