@@ -4,7 +4,7 @@
     Output(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027"),
     Join1=Input(rid="ri.foundry.main.dataset.817258a4-e831-49b2-be2d-1078b061a881")
 )
-#table with only peope with Long Covid 
+#table with only people with Long Covid 
 def Drop_zeros(Join1):
     unnamed_1 = Join1
     return unnamed_1[unnamed_1["LL_Long_COVID_diagnosis_indicator"] != 0]
@@ -867,8 +867,8 @@ from pyspark.sql import functions as F
 # same thing as EXCLUDING patients where long covid date is BEFORE drug exposure start date (which is on the doc)
 # use this df to drop those who match this criteria 
 def people_to_drop(Drop_zeros):
-    unnamed_2 = Drop_zeros
-    filtered_df = unnamed_2[unnamed_2['long_covid_date'] < unnamed_2['drug_exposure_start_date']]
+    Drop_zeros
+    filtered_df = Drop_zeros[Drop_zeros['long_covid_date'] >= Drop_zeros['drug_exposure_start_date']]
     return filtered_df
     
    
