@@ -4,9 +4,7 @@
     Output(rid="ri.foundry.main.dataset.d1d219fa-ab7a-433b-a5d1-fa97c069e027"),
     Join1=Input(rid="ri.foundry.main.dataset.817258a4-e831-49b2-be2d-1078b061a881")
 )
-# for some reason, even after joining with the covid table, there are some people who seem to not have long covid
-# does not make sense since they have a long covid date 
-# for now, i am dropping these people 
+#table with only peope with Long Covid 
 def Drop_zeros(Join1):
     unnamed_1 = Join1
     return unnamed_1[unnamed_1["LL_Long_COVID_diagnosis_indicator"] != 0]
