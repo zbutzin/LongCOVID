@@ -877,10 +877,10 @@ def people_to_drop(Drop_zeros):
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.d9fd0d20-392f-4c78-91dd-b93afeaedca5"),
-    Final_table_2_copied_1=Input(rid="ri.foundry.main.dataset.916a2961-f7fe-4a9d-a261-099bca212f2b")
+    Final_table_2_copied=Input(rid="ri.foundry.main.dataset.916a2961-f7fe-4a9d-a261-099bca212f2b")
 )
-def rename_2(Final_table_2_copied_1):
-    renamed_df = Final_table_2_copied_1.withColumnRenamed("pcos", "pcos_new")
+def rename_2( Final_table_2_copied):
+    renamed_df = Final_table_2_copied.withColumnRenamed("pcos", "pcos_new")
     return renamed_df
 
 @transform_pandas(
@@ -970,12 +970,12 @@ def update_covid(update_LL_Status2, FINAL_METFORMIN_DF):
 
 @transform_pandas(
     Output(rid="ri.foundry.main.dataset.aae1eeb3-0932-4745-b958-1bb5ad207420"),
-    Final_table_2_copied_1=Input(rid="ri.foundry.main.dataset.916a2961-f7fe-4a9d-a261-099bca212f2b"),
+    Final_table_2_copied=Input(rid="ri.foundry.main.dataset.916a2961-f7fe-4a9d-a261-099bca212f2b"),
     update_LL_Status2=Input(rid="ri.foundry.main.dataset.9fd8831b-4c8b-4d93-a2e4-56dc7b8d0b42")
 )
-def update_final_table(update_LL_Status2, Final_table_2_copied_1):
+def update_final_table(update_LL_Status2, Final_table_2_copied):
     # Perform left join on the two dataframes based on 'new_person_id'
-    merged_df = Final_table_2_copied_1.merge(
+    merged_df = Final_table_2_copied.merge(
         update_LL_Status2, 
         on='new_person_id', 
         how='left', 
