@@ -1,14 +1,13 @@
 ---
-rid: "ri.vector.main.workbook.b318b87b-1b40-4609-b792-4a9e9d67b1e3"
-repositoryRid: "ri.stemma.main.repository.4fa6173a-b18f-4785-898b-597edabbf44b"
+rid: "ri.vector.main.workbook.198b0d16-e98c-4b66-9462-156c4abef2ab"
+repositoryRid: "ri.stemma.main.repository.20a8530b-1d67-451e-8409-2b0b638609e3"
 environmentRepositoryRid: null
 backingRepositoryRids:
 - "ri.vector.runtime.artifacts.repository"
 - "ri.artifacts.repository.artifactory.external-conda-forge"
-- "ri.artifacts.repository.artifactory.external-conda-anacondar"
-- "ri.artifacts.repository.artifactory.internal-docker-release"
 - "ri.artifacts.repository.artifactory.external-conda-anaconda"
-outputFolderRid: "ri.compass.main.folder.7932e310-b79f-4357-b486-f1a7a6aa4036"
+- "ri.artifacts.repository.artifactory.internal-docker-release"
+outputFolderRid: "ri.compass.main.folder.5dde0ba6-6096-47b8-bcda-e1a57281948a"
 comparisonParentFolderRid: "ri.compass.main.folder.0102fd39-eb45-4847-844d-d6ce805817c4"
 legacyVectorLanguage: null
 autoLayoutPaths: false
