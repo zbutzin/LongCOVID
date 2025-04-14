@@ -1,21 +1,555 @@
 library(tmle)
+library(SuperLearner)
 library(dplyr)
-library(foreach)
-library(data.table)
 
-est_tmle <- function(df, W_nodes) {
+get_tmle_est = function(fit){
+  return(c(fit$estimates$RR$log.psi, fit$estimates$RR$var.log.psi))
+}
+################################################################################
+# @Organization - CTML
+# @Project - Causal surveillance
+# @Description - This file is responsible for estimating the variance of IC of logRR
+################################################################################
+
+# Helper functions -------
+bound = function(X, alpha=0.0005){
+  # maxX <- max(X)
+  # minX <- min(X) 
+  # f <- maxX - minX
+  # X_new = (X-minX)/f
+  X[X>=1-alpha] <- 1-alpha
+  X[X<=alpha] <- alpha 
+  return(X)
+}
+
+unbound = function(X){
+  maxX <- max(X)
+  minX <- min(X) 
+  f <- maxX - minX
+  return(X*f + minX)
+}
+
+calc_stop_crit = function(IC, n){
+  thres <- sqrt(var(IC))/(sqrt(n)*log(n))
+  return (abs(mean(IC)) <= thres) # stop when this is true
+}
+
+#' Calculate the variance from IC
+#'
+#' Calculate the variance from IC by var = mean(IC^2)/n
+#'
+#' @param df dataframe
+#' @return A numeric vector of variance
+#'
+
+calc_var_from_IC = function(df, IC){
+  n <- nrow(df)
+  v_var <- mean(IC^2)/n
+  v_var
+}
+
+# Updating functions -------
+## Helper functions -------
+
+# return a vector of initial influence curve of logRR
+IC_initial_fn = function(Q1, Q0, g1){
+  g0 <- 1-g1
+  mu1 <- mean(Q1)
+  mu0 <- mean(Q0)
+  IC_init <- 1/mu1^2 * Q1*(1-Q1)/g1 + 1/mu0^2 * Q0*(1-Q0)/g0 + (Q1/mu1-Q0/mu0)^2
+  return(IC_init)
+}
+
+# the formula of variance of IC of logRR
+var_logRR_fn = function(Q1, Q0, g1){
+  IC_initial <- IC_initial_fn(Q1, Q0, g1)
+  return(mean(IC_initial))
+}
+
+#' A helper function to use the formula to calculate the influence curve of variance of log risk ratio
+#'
+#' Calculate the influence curve of variance of log risk ratio with updated Q and g
+#' 
+#' @param A 
+#' @param Y
+#' @param Q1 estimated Q1 = E[Y|A=1, W]
+#' @param Q0 estimated Q0 = E[Y|A=0, W]
+#' @param g1 treatment mechanism estimates, P(A = 1|W)
+#' @return A numeric vector of the influence curve
+#'
+IC_var_logRR_fn = function(A, Y, Q1, Q0, g1){
+  g0 <- 1-g1
+  mu1 <- mean(Q1)
+  mu0 <- mean(Q0)
+  I1 <- as.numeric(A==1)
+  I0 <- as.numeric(A==0)
+  
+  # clever covariates
+  H1 <- clever_covar_Q_fn(Q1, Q0, g1, 'A1')
+  H0 <- clever_covar_Q_fn(Q1, Q0, g1, 'A0')
+  
+  IC_initial <- IC_initial_fn(Q1, Q0, g1)
+  
+  # influence curves
+  D_w <- IC_initial - mean(IC_initial)
+  D_y <-  H1 * (I1/g1*(Y-Q1)) + H0 * (I0/g0*(Y-Q0))
+  D_g <- -1/mu1^2 * Q1*(1-Q1)/g1^2 * (I1-g1) - 1/mu0^2 * Q0*(1-Q0)/g0^2 * (I0-g0)
+  
+  return(D_w + D_y + D_g)
+}
+
+clever_covar_Q_fn = function(Q1, Q0, g1, cate='A1'){
+  mu1 <- mean(Q1)
+  mu0 <- mean(Q0)
+  g0 <- 1-g1
+  theta1 <- mean(Q1*(1-Q1)/g1)
+  theta2 <- mean(Q0*(1-Q0)/g0)
+  theta3 <- mean(Q1^2)
+  theta4 <- mean(Q0^2)
+  theta5 <- mean(Q1*Q0)
+  
+  if(cate=='A1'){
+    H <- 1/mu1^2 * ((1-2*Q1)/g1 + 2*Q1 - 2*mu1*Q0/mu0 - 
+                      2/mu1*(theta1 + theta3) + 2/mu0* theta5)
+  }else{
+    H <- 1/mu0^2 * ((1-2*Q0)/g0 + 2*Q0 - 2*mu0*Q1/mu1 - 
+                      2/mu0*(theta2 + theta4) + 2/mu1* theta5)
+  }
+  return(H)
+}
+
+clever_covar_g_fn = function(Q1, Q0, g1){
+  mu1 <- mean(Q1)
+  mu0 <- mean(Q0)
+  g0 <- 1-g1
+  Hg <- 1/mu0^2 * Q0*(1-Q0) / g0^2 - 
+    1/mu1^2 * Q1*(1-Q1) / g1^2
+  
+  return(Hg)
+}
+
+## One-step -------
+# TODO: record the number of increments v.s loss - computational cost
+#' Calculate the influence curve of variance of log risk ratio
+#'
+#' Calculate the influence curve of variance of log risk ratio using universal least favorable model: https://rdrr.io/cran/tmle/src/R/tmle.R
+#' 
+#' @param Q a 3-column matrix (Q(A,W), Q(1,W), Q(0,W))
+#' @param g1W treatment mechanism estimates, P(A = 1|W)
+#' @param Y
+#' @param A
+#' @param depsilon=0.001 step size for delta moves, set to 0.001
+#' @param max_iter
+#' @return A list of psi, Q, g and convergence
+#'
+one_step_update = function(Q, g1W, Y, A, stop_crit = TRUE, logRR = TRUE, depsilon=0.0001, max_iter = 100){
+  n <- length(Y)
+  # g_alpha <- 5/sqrt(n)/log(n)
+  g_alpha <- 0.05
+  I1 <- as.numeric(A==1)
+  I0 <- as.numeric(A==0)
+  g1W.prev <- g1W <- bound(g1W, alpha = g_alpha)
+  Q.prev <- Q <- bound(Q)
+  # mu0 <- mu0.prev <- mean(Q[,"Q0W"])
+  # mu1 <- mu1.prev <- mean(Q[,"Q1W"])
+  
+  # define loss function
+  calcLoss <- function(Q, g1W){
+    -mean(Y * log(Q[,"QAW"]) + (1-Y) * log(1 - Q[,"QAW"]) + A * log(g1W) + (1-A) * log(1 - g1W))
+  }
+  
+  # define parameter of interest: the variance of IC of logRR
+  psi.prev <- psi <- var_logRR_fn(Q[,"Q1W"], Q[,"Q0W"], g1W)
+  H1 <- clever_covar_Q_fn(Q[,"Q1W"], Q[,"Q0W"], g1W, cate='A1')
+  H0 <- clever_covar_Q_fn(Q[,"Q1W"], Q[,"Q0W"], g1W, cate='A0')
+  
+  HQ.AW <- H1 * (I1/g1W) + H0 * (I0/(1-g1W))
+  Hg <- clever_covar_g_fn(Q[,"Q1W"], Q[,"Q0W"], g1W)
+  
+  # determine the sign of derivative: DQ + Dg - just need the sign
+  # Dg <- Hg * (A-g1W)
+  # DQ <- HQ.AW * (Y-Q[, "QAW"])
+  IC.prev <- IC.cur <- IC_var_logRR_fn(A, Y, Q[,"Q1W"], Q[,"Q0W"], g1W)
+  
+  # TODO: should I add DW
+  IC_initial <- IC_initial_fn(Q[,"Q1W"], Q[,"Q0W"], g1W)
+  deriv <-  mean(IC.prev- IC_initial + mean(IC_initial))
+  if (deriv > 0) {
+    depsilon <- -depsilon
+  }
+  
+  loss.prev <- Inf
+  loss.cur <-  calcLoss(Q, g1W)
+  if(is.nan(loss.cur) | is.na(loss.cur) | is.infinite(loss.cur)) { 
+    loss.cur <- Inf
+    loss.prev <- 0
+  }
+  iter <-  0
+  
+  # Define continue condition
+  if(stop_crit){
+    cond <- (!calc_stop_crit(IC.cur, n)) & (iter < max_iter) & (loss.prev > loss.cur)
+  }else{
+    cond <- loss.prev > loss.cur & iter < max_iter
+  }
+  ########## changes
+  vars <- c(psi.prev)
+  bias <- c(mean(IC.prev))
+  losses <- c(loss.cur)
+
+ #TODO: plot the mean of influence curve for each iteration
+  while (cond){
+    IC.prev <- IC.cur
+    Q.prev <- Q
+    g1W.prev <- g1W	
+    
+    # update g1W from g1W.prev and Hg
+    Hg <- clever_covar_g_fn(Q.prev[,"Q1W"], Q.prev[,"Q0W"], g1W.prev)
+    g1W <- bound(plogis(qlogis(g1W.prev) - depsilon  * Hg), g_alpha) 
+    
+    # update Q from previous Q and HQ
+    H1 <- clever_covar_Q_fn(Q.prev[,"Q1W"], Q.prev[,"Q0W"], g1W.prev, cate='A1')
+    H0 <- clever_covar_Q_fn(Q.prev[,"Q1W"], Q.prev[,"Q0W"], g1W.prev, cate='A0')
+    
+    HQ <- cbind(HAW = H1 * (I1/g1W.prev) + H0 * (I0/(1-g1W.prev)),
+                H0W = H0 * 1/(1-g1W.prev),
+                H1W = H1 * 1/g1W.prev) 
+    
+    
+    Q <- bound(plogis(qlogis(Q.prev) - depsilon * HQ))
+    # mu1.prev <- mu1
+    # mu0.prev <- mu0
+    # mu0 <- mean(Q[,"Q0W"])
+    # mu1 <- mean(Q[,"Q1W"])
+    
+    # update psi
+    psi.prev <- psi
+    psi <- var_logRR_fn(Q[,"Q1W"], Q[,"Q0W"], g1W)
+    loss.prev <- loss.cur
+
+    ######### changes
+    vars <- c(vars, psi)
+    bias <- c(bias, mean(IC.cur))
+    losses <- c(losses, loss.cur)
+
+    
+    # update loss
+    loss.cur <- calcLoss(Q, g1W)
+    # cat('iter: ', iter, '\n')
+    # cat('loss: ', loss.cur, '\n')
+    
+    # update IC 
+    IC.cur <- IC_var_logRR_fn(A, Y, Q[,"Q1W"], Q[,"Q0W"], g1W)
+    if(is.nan(loss.cur) | is.infinite(loss.cur) | is.na(loss.cur)) {loss.cur <- Inf}
+    iter <- iter + 1
+    depsilon <- depsilon * 0.5
+
+    if(stop_crit){
+      cond <- (!calc_stop_crit(IC.cur, n)) & (iter < max_iter) & (loss.prev > loss.cur)
+    }else{
+      cond <- loss.prev > loss.cur & iter < max_iter
+    }
+    if (iter == max_iter) {
+        warning("Max number of iteration reached, stop TMLE")
+    }
+  }
+  # plot the iteration v.s variance
+  cat('iteration: ', iter, '\n')
+  hist(IC.cur)
+  
+  plot(vars/n, type = "l", main = "One-step", xlab = "Index", ylab = "one-step")
+  plot(bias, type = "l", main = "Bias", xlab = "Index", ylab = "Bias")
+  plot(losses, type='l', main='Losses', xlab = "Index", ylab = "Losses")
+
+  
+  return(list(psi = psi.prev, Q = Q.prev, g1n = g1W.prev, conv = loss.prev < loss.cur))
+}
+
+## Iterative -------
+
+iterative_update = function(Q, ginit, Y, A, stop_crit=TRUE, logRR=TRUE, max_iter=1000){
+  n <- length(Y)
+  g_alpha <- 5/sqrt(n)/log(n)
+  Q <- bound(Q)
+  g1W <- bound(ginit$g1W, alpha = g_alpha)
+  if(logRR){
+    g0W <- bound(ginit$g0W, alpha = g_alpha)
+  }
+  
+  I1 <- as.numeric(A==1)
+  I0 <- as.numeric(A==0)
+  IC.prev <- IC.cur <- IC_var_logRR_fn(A, Y, Q[,"Q1W"], Q[,"Q0W"], g1W)
+  
+  thres <- 1e-10
+  ep <- epG <- 1
+  i <- 0
+  # TODO: DQ and Dg separately?
+  
+  # Define continue condition
+  if(stop_crit){
+    cond <- (!calc_stop_crit(IC.cur, n)) && (i < max_iter)
+  }else{
+    cond <- (abs(epG) > thres || abs(ep) > thres) && i < max_iter
+  }
+  
+  while (cond){
+    if(logRR){
+      IC.prev <- IC.cur
+      H1 <- clever_covar_Q_fn(Q[,"Q1W"], Q[,"Q0W"], g1W, cate='A1')
+      H0 <- clever_covar_Q_fn(Q[,"Q1W"], Q[,"Q0W"], g1W, cate='A0')
+      HQ <- H1 * (I1/g1W) + H0 * (I0/g0W)
+      
+      # update Q
+      # TODO: change it to super learner
+      fit <- glm(Y ~ -1 + offset(qlogis(Q[,"QAW"])) + HQ, family = binomial())
+      Q[,"QAW"] <- bound(fit$fitted.values) # update offset
+      ep <- coef(fit)
+      H1Q <- H1 * 1/g1W
+      Q[,"Q1W"] <- bound(plogis(qlogis(Q[,"Q1W"]) + ep * H1Q))
+      
+      H0Q <- H0 * 1/g0W
+      Q[,"Q0W"]<- bound(plogis(qlogis(Q[,"Q0W"]) + ep * H0Q))
+      
+      # update g
+      Hg <- clever_covar_g_fn(Q[,"Q1W"], Q[,"Q0W"], g1W)
+      epG <- coef(glm(A ~ -1 + offset(qlogis(g1W)) + Hg, family = binomial()))
+      g_star <- bound(plogis(qlogis(g1W) + epG * Hg), alpha=g_alpha)
+      g1W <- g_star
+      g0W <- 1 - g_star
+      IC.cur <- IC_var_logRR_fn(A, Y, Q[,"Q1W"], Q[,"Q0W"], g1W)
+      
+    }else{
+      HQ <- as.numeric(A==1)/g1W * ((1-2*Q[,"Q1W"])/g1W + 2*(Q[,"Q1W"]-mean(Q[,"Q1W"])))
+      
+      # update Q
+      ep <- coef(glm(Y ~ -1 + offset(qlogis(Q[,"Q1W"])) + HQ, family = binomial(), subset = A==1))
+      HQ <- 1/g1W * ((1-2*Q[,"Q1W"])/g1W + 2*(Q[,"Q1W"]-mean(Q[,"Q1W"])))
+      Q[,"Q1W"] <- bound(plogis(qlogis(Q[,"Q1W"]) + ep * HQ))
+      
+      # update g
+      Hg <- Q[,"Q1W"]*(1-Q[,"Q1W"])/g1W^2
+      epG <- coef(glm(A ~ -1 + offset(qlogis(g1W)) + Hg, family = binomial()))
+      g_star <- bound(plogis(qlogis(g1W) + epG * Hg))
+      
+      g1W <- g_star
+    }
+    i <- i + 1
+    if(stop_crit){
+      cond <- (!calc_stop_crit(IC.cur, n)) && (i < max_iter) 
+    }else{
+      cond <- (abs(epG) > thres || abs(ep) > thres) && i < max_iter
+    }
+  }
+  # if(i==maxIter){
+  #   cat('epG: ', epG)
+  #   cat('\n ep: ', ep)
+  # }
+  if(logRR){
+    # cat('Total iteration: ', i, '\n')
+    return(list(Q = Q, g1n = g1W))
+  }else{
+    return(list(Q=Q, g1n = g_star))
+  }
+}
+
+# Main function -------
+
+#' Estimate variance of logRR with targeted variance
+#'
+#' estimate the targeted variance of logRR using targeted variance
+#' 
+#' @param df a dataframe composed of Y, A and W
+#' @param tmle_fit a tmle fit of df
+#' @param update which update method for the targeted variance, can be 'simple', 'iterative', or 'one-step'
+#' @return A list composed of the estimate of the variance and its influence curves
+#'
+
+var_robust_logRR = function(df, tmle_fit, update='simple', stop_crit = TRUE){
+  n <- nrow(df)
+  gbound <- 5/sqrt(n)/log(n)
+  # tmle_r <- estimate_tmle(df)
+  tmle_r <- tmle_fit
+  
+  A <- df$A
+  Y <- df$Y
+  
+  Q0W <- tmle_r$Qinit$Q[, 1]
+  Q1W <- tmle_r$Qinit$Q[, 2]
+  QAW <- as.numeric(A==1)*Q1W + as.numeric(A==0)*Q0W
+  g1W <- tmle_r$g$g1W
+  g0W <- 1 - g1W
+  g <- as.numeric(A==1)*g1W + as.numeric(A==0)*g0W
+  
+  # Q <- list(QAW = QAW, Q0W = Q0W, Q1W = Q1W)
+  Q <- matrix(c(QAW, Q0W, Q1W), nrow = n, ncol = 3, dimnames = list(NULL, c('QAW', 'Q0W', 'Q1W')))
+  ginit <- list(g=g, g0W = g0W, g1W = g1W)
+  
+  
+  if(update == 'iterative'){ # use updated Q and g from IC of var
+    r = iterative_update(Q, ginit, Y, A, stop_crit)
+    Q1_star <- r$Q[, 'Q1W']
+    Q0_star <- r$Q[, 'Q0W']
+    g1W <- r$g1n
+  }else if (update == 'one-step'){
+    r = one_step_update(Q, g1W, Y, A, stop_crit)
+    Q1_star <- r$Q[, 'Q1W']
+    Q0_star <- r$Q[, 'Q0W']
+    g1W <- r$g1n
+  }else{ # simple plug-in
+    Q0_star <- tmle_r$Qinit$Q[, 1]
+    Q1_star <- tmle_r$Qinit$Q[, 2]
+  }
+  
+  # TODO: bound Q as well
+  # EY0 <- mean(Q0_star)
+  # EY1 <- mean(Q1_star)
+  g0W <- 1 - g1W
+
+  # bound g1 and g0
+  g1W_bdd <- bound(g1W, alpha=gbound)
+  # g1W_bdd <- g1W
+  # g1W_bdd[g1W_bdd<gbound] = gbound
+  # g0W_bdd <- g0W
+  # g0W_bdd[g0W_bdd<gbound] = gbound
+  hist(Q1_star, main=paste0('Q1W: ', update))
+  cat(update, '\n')
+  cat('Q1', '\n')
+  print(summary(Q1_star))
+  cat('Q0', '\n')
+  print(summary(Q0_star))
+  hist(g1W_bdd, man=paste0('g1W: ', update))
+  print(summary(g1W_bdd))
+  print(summary(1-g1W_bdd))
+  
+  v <- var_logRR_fn(Q1_star, Q0_star, g1W_bdd)
+  # v <- 1/EY1^2 * mean(Q1_star*(1-Q1_star)/g1W_bdd) +
+  #   1/EY0^2 * mean(Q0_star*(1-Q0_star)/g0W_bdd) +
+  #   mean((Q1_star/EY1 - Q0_star/EY0)^2)
+  
+  IC <- IC_var_logRR_fn(A, Y, Q1_star, Q0_star, g1W_bdd)
+  
+  return(list(est = v/n, IC = IC))
+}
+
+#' Calculate the variance estimator of EY1
+#' 
+#' @param df dataframe
+#' @return A numeric vector of influence curve
+#'
+var_robust_EYa = function(df){
+  Y <- df$Y
+  A <- df$A
+  n = nrow(df)
+  tmle_r <- estimate_tmle(df)
+  Q0W <- tmle_r$Qinit$Q[, 1]
+  Q1W <- tmle_r$Qinit$Q[, 2]
+  QAW <- as.numeric(A==1)*Q1W + as.numeric(A==0)*Q0W
+  g1W <- tmle_r$g$g1W
+  g0W <- 1 - g1W
+  g <- as.numeric(A==1)*g1W + as.numeric(A==0)*g0W
+  
+  
+  Q <- matrix(c(QAW, Q0W, Q1W), nrow = n, ncol = 3, dimnames = list(NULL, c('QAW', 'Q0W', 'Q1W')))
+  ginit <- list(g=g, g0W = g0W, g1W = g1W)
+  
+  # update Q and g
+  r <- iterative_update(Q, ginit, Y, A, stop_crit=FALSE, logRR=FALSE)
+  
+  Q <- r$Q[, 'Q1W']
+  g <- r$g1n
+  
+  phi <- mean(Q)
+  D_w <- Q*(1-Q)/g - mean(Q*(1-Q)/g) + (Q-phi)^2 - mean((Q-phi)^2)
+  D_y <- A/g * ((1-2*Q)/g + 2*(Q-phi)) * (Y-Q)
+  D_g <- -Q*(1-Q)/g^2 * (A-g)
+  
+  est <- mean(Q*(1-Q)/g + (Q-phi)^2)
+  return(list(est=est/n, IC=D_w + D_y + D_g))
+}
+
+@transform_pandas(
+    Output(rid="ri.foundry.main.dataset.c3203fde-9563-4b57-9e96-e1e4b868ef0f"),
+    cleaned=Input(rid="ri.foundry.main.dataset.b3adf548-df4b-4b44-aba4-a1e3712c7fb7")
+)
+sample <- function(cleaned) {
+    # post indicator to be 1
+    df <- cleaned %>% filter(post_COVID_visit_indicator==1) %>% select(-post_COVID_visit_indicator)
+    df <- df %>% sample_n(2000, replace = FALSE)
+
+    return(df)
+}
+
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.dc5f3fc4-e69b-4d1c-88f1-0e2101263bdb"),
+    Clean_negative_outcome=Input(rid="ri.foundry.main.dataset.960cfbb6-dbe5-4bc4-a0c0-5cd6163aced3")
+)
+sample2 <- function(Clean_negative_outcome) {
+    df <- Clean_negative_outcome %>% filter(post_COVID_visit_indicator==1) %>% select(-post_COVID_visit_indicator) %>% select(c(number_of_visits_before_covid, SSRI_Indicator, fracture_indicator, BMI_max_observed_or_calculated_before_or_day_of_covid, DIABETESUNCOMPLICATED_before_or_day_of_covid_indicator, TOBACCOSMOKER_before_or_day_of_covid_indicator, sex_FEMALE, race_ethnicity_White_Non_Hispanic, cdm_name_OMOP))
+    df <- df %>% sample_n(500, replace = FALSE)
+    return(df)
+}
+
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.c64f9124-9ef0-4720-8785-4d2236508823"),
+    cleaned=Input(rid="ri.foundry.main.dataset.b3adf548-df4b-4b44-aba4-a1e3712c7fb7")
+)
+unnamed <- function(cleaned) {
+    df <- cleaned
     # include all the covariates
-    gform <- "A~"
-    Qform <- "Y~"
-    W_nodes <-  W_nodes[!W_nodes %in% c('SSRI_Indicator', 'Long_COVID_diagnosis_post_covid_indicator')]
-    cov_terms <- paste0(W_nodes, collapse='+')
+    cov_names <- colnames(df)
+    cov_names <- cov_names[!cov_names %in% c('SSRI_Indicator', 'Long_COVID_diagnosis_post_covid_indicator', 'post_COVID_visit_indicator')]
+    cov_terms <- paste0(cov_names, collapse='+')
     gform <- paste0('A~', cov_terms)
     Qform <- paste('Y~', 'A+', cov_terms)
+    Dform <- paste('Delta~', 'A+', cov_terms)
+    print(gform)
     print(Qform)
-
+    print(Dform)
     SL.library = c("SL.glm", "tmle.SL.dbarts2", "SL.glmnet", "SL.xgboost", "SL.caret", "SL.caret.rpart", "SL.knn", "SL.nnet", "SL.randomForest", "SL.rpart") 
-    Qform <- paste(Qform, 'A', sep='+')
     fit <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
+              A = df[['SSRI_Indicator']],
+              W = df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator, SSRI_Indicator, post_COVID_visit_indicator)),
+              gform = gform,
+              Qform = Qform,
+            #   Q.SL.library = SL.library,
+            #   g.SL.library = SL.library,
+              family = 'binomial')
+              
+    print(summary(fit))
+    g1W <- fit$g$g1W
+    n <- length(g1W)
+    alpha <- 5/sqrt(n)/log(n)
+    prop <- sum((g1W < alpha) | (g1W > (1-alpha))) / n
+    print(prop)
+    tmle_r <- get_tmle_est(fit)
+    # change the column name to A and Y
+    # df <- df %>% rename(A = SSRI_Indicator, Y = Long_COVID_diagnosis_post_covid_indicator)
+
+    # v_subs <- var_robust_logRR(df, fit)$est
+    # v_iter_new <- var_robust_logRR(df, fit, update='iterative')$est
+    # v_one_new <- var_robust_logRR(df, fit, update='one-step')$est
+        
+    # print(c(tmle_r[1], tmle_r[2], v_subs, v_iter_new, v_one_new))
+    return(NULL)
+}
+
+@transform_pandas(
+    Output(rid="ri.vector.main.execute.b1e108e6-df0e-4347-8eb8-43ef8dfacd3d"),
+    sample=Input(rid="ri.foundry.main.dataset.c3203fde-9563-4b57-9e96-e1e4b868ef0f")
+)
+unnamed_1 <- function(sample) {
+    df <- sample
+    # include all the covariates
+    cov_names <- colnames(df)
+    cov_names <- cov_names[!cov_names %in% c('SSRI_Indicator', 'Long_COVID_diagnosis_post_covid_indicator', 'post_COVID_visit_indicator')]
+    cov_terms <- paste0(cov_names, collapse='+')
+    gform <- paste0('A~', cov_terms)
+    Qform <- paste('Y~', 'A+', cov_terms)
+    # print(gform)
+    # print(Qform)
+    SL.library = c("SL.glm", "tmle.SL.dbarts2", "SL.glmnet", "SL.xgboost", "SL.caret", "SL.caret.rpart", "SL.knn", "SL.nnet", "SL.randomForest", "SL.rpart")
+    suppressWarnings({
+        fit <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
             A = df[['SSRI_Indicator']],
             W = df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator, SSRI_Indicator)),
             gform = gform,
@@ -23,323 +557,45 @@ est_tmle <- function(df, W_nodes) {
             Q.SL.library = SL.library,
             g.SL.library = SL.library,
             family = 'binomial')
-
-    return(fit)
-}
-
-t.test.sample <- function(mu1, mu2, se1, se2, n1, n2){
-    SE <- sqrt(se1^2/n1 + se2^2/n2)
-    t <- (mu1 - mu2)/SE
-    pvalue <- 2*pt(-abs(t), n1+n2-2)
-    return(c(t, pvalue))
-}
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.a999c60d-da2d-47ef-b531-93c67eff325c"),
-    drug_type_cleaned=Input(rid="ri.foundry.main.dataset.aa9a922b-6cc2-48b5-a538-3d56029bd395")
-)
-debug_for_fluvoxamine <- function(drug_type_cleaned) {
-    df <- drug_type_cleaned
-    exposure <- 'vilazodone_indicator'
-    drug_types <- c('fluoxetine_indicator', 'sertraline_indicator', 'paroxetine_indicator', 'fluvoxamine_indicator', 'citalopram_indicator', 'vilazodone_indicator', 'escitalopram_indicator')
-
-    df <- df %>% filter(.[[exposure]] == 1 | SSRI_Indicator == 0)
-    df_W <- df %>% select(-drug_types) %>% select(-c('SSRI_Indicator', 'Long_COVID_diagnosis_post_covid_indicator'))
-    gform <- "A~"
-    Qform <- "Y~"
-    cov_names <- colnames(df_W)
-    for(i in 1:length(cov_names)){
-        x <- cov_names[i]
-        if (i==1){
-            gform <- paste0(gform, x)
-            Qform <- paste0(Qform, x)
-        }else{
-            gform <- paste(gform, x, sep='+')
-            Qform <- paste(Qform, x, sep='+')
-        }
-        
-    }
-    Qform <- paste(Qform, 'A', sep='+')
-
-    print(nrow(df))
-    Q <- glm(Long_COVID_diagnosis_post_covid_indicator ~ fluvoxamine_indicator + ., df, family = "binomial")
-    cQ <- coef(Q)
-    cQ[is.na(cQ)] <- 0
-    print("Coef for A:")
-    print(cQ[[exposure]])
-
-    r <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-        A = df[[exposure]],
-        W = df_W,
-        gform = gform,
-        Qform = Qform,
-        family = 'binomial',
-        cvQinit = FALSE,
-        prescreenW.g = TRUE
-        )
-
-    print(summary(r)) 
-    print("Qinit:")
-    print(colMeans(r$Qinit$Q))
-    print("Qstar:")
-    print(colMeans(r$Qstar))
-    print("g1W:")
-    print(quantile(r$g$g1W))
-    print("gbound:")
-    print(r$gbound)
-    print("epsilon:")
-    print(r$epsilon)
-
-    # debug fluctuation model
-    n <- nrow(df)
-    A <- df$fluvoxamine_indicator
-    Y <- df$Long_COVID_diagnosis_post_covid_indicator
-    gi <- r$g$g1W
-    Qi <- r$Qinit$Q
-    Q0 <- Qi[,1]
-    Q1 <- Qi[,2]
-
-    QA <- ifelse(A==0, Q0, Q1)
-    g1 <- pmax(gi, 5/sqrt(n)/log(n))
-    g0 <- pmax(1-gi, 5/sqrt(n)/log(n))
-
-    #QA <- plogis(QA)
-    wt <- (A/g1+(1-A)/g0)
     
-    H0 <- (1-A)
-    H1 <- (A)
-    IC0 <- (1-A)/g0*(Y-Q0)+Q0-mean(Q0)
-    IC1 <- A/g1*(Y-Q1)+Q1-mean(Q1)
-    D0 <- abs(mean(IC0))
-    D1 <- abs(mean(IC1))
-    norm <- sqrt(D0^2+D1^2)
-    wt2 <- (A/g1)*D1/norm + ((1-A)/g0)*D0/norm
-    f <- glm(Y~H0+H1-1, family=binomial(), offset = qlogis(QA), weight = wt2)
-    coef(f)
-    f_cc <- glm(Y~I(H0/g0)+I(H1/g1)-1, family=binomial(), offset = qlogis(QA))
-    coef(f_cc)
-    dt <- data.table(A, wt, wt2)
-    print(dt[,as.list(quantile(wt)),by=list(A)])
-    print(dt[,as.list(quantile(wt2)),by=list(A)])
-    print(coef(f))
+              
+    # print(summary(fit))
+    Q1W <- fit$Q
+    g1W <- fit$g$g1W
+    n <- length(g1W)
+    alpha <- 5/sqrt(n)/log(n)
+    prop <- sum((g1W < alpha) | (g1W > (1-alpha))) / n
+    cat('Proportion truncated is: ', prop, '\n')
+    cat('Sample size: ', n, '\n')
+    cat('Long covid patients: ', sum(df[['Long_COVID_diagnosis_post_covid_indicator']]), '\n')
 
-    #Q0star <- plogis(coef(f)[1]+qlogis(Q0))
-    #Q1star <- plogis(coef(f)[2]+qlogis(Q1))
-    #QAstar <- plogis((coef(f)[1] * H0 + 
-    #                  coef(f)[2] * H1)+qlogis(QA))
-    Q0star <- plogis(coef(f_cc)[1]*(1/g0)+qlogis(Q0))
-    Q1star <- plogis(coef(f_cc)[2]*(1/g1)+qlogis(Q1))
-    QAstar <- plogis((coef(f_cc)[1] * H0 + 
-                      coef(f_cc)[2] * H1)+qlogis(QA))
-    mean(Q0star)
-    mean(Q1star)
-    colMeans(r$Qstar)
+    tmle_r <- get_tmle_est(fit)
+    # change the column name to A and Y
+    df <- df %>% rename(A = SSRI_Indicator, Y = Long_COVID_diagnosis_post_covid_indicator)
 
-    IC0 <- (1-A)/g0*(Y-Q0star)+Q0-mean(Q0)
-    IC1 <- A/g1*(Y-Q1star)+Q1-mean(Q1)
-    IC_ATE <- (A/g1-(1-A)/g0)*(Y-QAstar)+Q1star-Q0star-(mean(Q1star)-mean(Q0star))
-    print(mean(IC0))
-    print(mean(IC1))
-
-    r_cc <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-        A = df[[exposure]],
-        W = df_W,
-        gform = gform,
-        Qform = Qform,
-        family = 'binomial',
-        cvQinit = FALSE,
-        prescreenW.g = TRUE,
-        target.gwt = FALSE
-        )
-
-    print(summary(r_cc))
-
+    v_subs <- var_robust_logRR(df, fit)$est
+    v_iter_new <- var_robust_logRR(df, fit, update='iterative')$est
+    v_one_new <- var_robust_logRR(df, fit, update='one-step')$est})
+    print(c('logRR estimates', 'empirical', 'SS', 'iterative', 'one-step'))
+    print(c(tmle_r[1], tmle_r[2], v_subs, v_iter_new, v_one_new))
 }
 
 @transform_pandas(
-    Output(rid="ri.vector.main.execute.84d1b98a-f450-426b-a994-2dcee98097f7"),
-    dosage_low=Input(rid="ri.foundry.main.dataset.16a1526b-7318-40f1-a0ef-0af19e22822d")
+    Output(rid="ri.vector.main.execute.468f2c2e-2273-4f2e-bbdc-973e23acedac"),
+    sample2=Input(rid="ri.vector.main.execute.dc5f3fc4-e69b-4d1c-88f1-0e2101263bdb")
 )
-# tmle_R (b04c2f21-2d8e-4970-8a67-bd6adb19abbf): v14
-dosage_low_model <- function(dosage_low) {
-    df <- dosage_low
+unnamed_2 <- function(sample2) {
+    df <- sample2
     # include all the covariates
     cov_names <- colnames(df)
-    cov_names <- cov_names[!cov_names %in% c('dosage_60_low_ind', 'Long_COVID_diagnosis_post_covid_indicator')]
+    cov_names <- cov_names[!cov_names %in% c('SSRI_Indicator', 'fracture_indicator', 'post_COVID_visit_indicator')]
     cov_terms <- paste0(cov_names, collapse='+')
     gform <- paste0('A~', cov_terms)
     Qform <- paste('Y~', 'A+', cov_terms)
     print(gform)
     print(Qform)
     SL.library = c("SL.glm", "tmle.SL.dbarts2", "SL.glmnet", "SL.xgboost", "SL.caret", "SL.caret.rpart", "SL.knn", "SL.nnet", "SL.randomForest", "SL.rpart") 
-    r <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-              A = df[['dosage_60_low_ind']],
-              W = df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator, dosage_60_low_ind)),
-              gform = gform,
-              Qform = Qform,
-              Q.SL.library = SL.library,
-              g.SL.library = SL.library,
-              family = 'binomial')
-    
-    print(summary(r))
-    # print EY1, EY0
-    EY1 <- mean(r$Qstar[, "Q1W"])
-    EY0 <- mean(r$Qstar[, 'Q0W'])
-    cat('EY1: ', EY1, '\n')
-    cat('EY0: ', EY0, '\n')
-}
-
-#################################################
-## Global imports and functions included below ##
-#################################################
-
-library(tmle)
-library(dplyr)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.bda95184-d8e0-4086-86e9-60bb7d2a61d7"),
-    dosage_none=Input(rid="ri.foundry.main.dataset.5dbb8c35-ca13-4706-a4cf-06bb970ebff4")
-)
-# tmle_R (b04c2f21-2d8e-4970-8a67-bd6adb19abbf): v14
-dosage_model <- function(dosage_none) {
-    df <- dosage_none
-    # include all the covariates
-    cov_names <- colnames(df)
-    cov_names <- cov_names[!cov_names %in% c('dosage_60_ind', 'Long_COVID_diagnosis_post_covid_indicator')]
-    cov_terms <- paste0(cov_names, collapse='+')
-    gform <- paste0('A~', cov_terms)
-    Qform <- paste('Y~', 'A+', cov_terms)
-    print(gform)
-    print(Qform)
-    SL.library = c("SL.glm", "tmle.SL.dbarts2", "SL.glmnet", "SL.xgboost", "SL.caret", "SL.caret.rpart", "SL.knn", "SL.nnet", "SL.randomForest", "SL.rpart") 
-    r <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-              A = df[['dosage_60_ind']],
-              W = df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator, dosage_60_ind)),
-              gform = gform,
-              Qform = Qform,
-              Q.SL.library = SL.library,
-              g.SL.library = SL.library,
-              family = 'binomial')
-    
-    print(summary(r))
-    # print EY1, EY0
-    EY1 <- mean(r$Qstar[, "Q1W"])
-    EY0 <- mean(r$Qstar[, 'Q0W'])
-    cat('EY1: ', EY1, '\n')
-    cat('EY0: ', EY0, '\n')
-}
-
-#################################################
-## Global imports and functions included below ##
-#################################################
-
-library(tmle)
-library(dplyr)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.a0a3ae12-bb7c-4ba2-8eaa-5b827b1866d7"),
-    drug_type_cleaned=Input(rid="ri.foundry.main.dataset.aa9a922b-6cc2-48b5-a538-3d56029bd395")
-)
-model_drug_type <- function(drug_type_cleaned) {
-    df <- drug_type_cleaned
-    drug_types <- c('fluoxetine_indicator', 'sertraline_indicator', 'paroxetine_indicator', 'fluvoxamine_indicator', 'citalopram_indicator', 'escitalopram_indicator', 'vilazodone_indicator')
-    df_W <- df %>% select(-drug_types) %>% select(-c("SSRI_Indicator", 'Long_COVID_diagnosis_post_covid_indicator'))
-    # include all the covariates
-    cov_names <- colnames(df_W)
-    cov_terms <- paste0(cov_names, collapse='+')
-    gform <- paste0('A~', cov_terms)
-    Qform <- paste('Y~', 'A+', cov_terms)
-    print(gform)
-    print(Qform)
-    SL.library = c("SL.glm", "tmle.SL.dbarts2", "SL.glmnet", "SL.xgboost", "SL.caret", "SL.caret.rpart", "SL.knn", "SL.nnet", "SL.randomForest", "SL.rpart") 
-    for(exposure in drug_types){
-        print(exposure)
-        # filter those who have the exposure or no SSRI
-        df <- drug_type_cleaned
-        df <- df %>% filter(.[[exposure]] == 1 | SSRI_Indicator == 0)
-        df_W <- df %>% select(-drug_types) %>% select(-c('SSRI_Indicator', 'Long_COVID_diagnosis_post_covid_indicator'))
-        n <- nrow(df)
-
-        r <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-            A = df[[exposure]],
-            W = df_W,
-            gform = gform,
-            Qform = Qform,
-            Q.SL.library = SL.library,
-            g.SL.library = SL.library,
-            family = 'binomial')
-
-        # print(summary(r))
-        EY1 <- mean(r$Qstar[, "Q1W"])
-        EY0 <- mean(r$Qstar[, 'Q0W'])
-        cat('Number of A=1: ', sum(df[exposure]), '\n')
-        cat('Number of A=0: ', n-sum(df[exposure]), '\n')
-        cat('Number of Y=1 in A=1: ', sum(df[df[exposure]==1, 'Long_COVID_diagnosis_post_covid_indicator']), '\n')
-        cat('Number of Y=1 in A=0: ', sum(df[df[exposure]==0, 'Long_COVID_diagnosis_post_covid_indicator']), '\n')
-        cat('EY1: ', EY1, '\n')
-        cat('EY0: ', EY0, '\n')
-        # cat('Estimates: ', r$estimates, '\n')
-        ate_est <- paste0(r$estimates$ATE$psi, '(', r$estimates$ATE$CI[1], ', ', r$estimates$ATE$CI[2], ')')
-        cat('ATE: ', ate_est, '\n')
-        RR_est <- paste0(r$estimates$RR$psi, '(', r$estimates$RR$CI[1], ', ', r$estimates$RR$CI[2], ')')
-        cat('RR: ', RR_est, '\n')
-    }
-}
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.d7a4968a-08c7-4ad0-ae2f-cd7b8ac3e7aa"),
-    clean_negative_exposure=Input(rid="ri.foundry.main.dataset.c702a53b-86af-457c-84f7-d376c4f41aa1")
-)
-# tmle_R (b04c2f21-2d8e-4970-8a67-bd6adb19abbf): v11
-model_negative_exposure <- function(clean_negative_exposure) {
-    df <- clean_negative_exposure
-    # include all the covariates
-    cov_names <- colnames(df)
-    cov_names <- cov_names[!cov_names %in% c('azithromycin_indicator', 'Long_COVID_diagnosis_post_covid_indicator')]
-    cov_terms <- paste0(cov_names, collapse='+')
-    gform <- paste0('A~', cov_terms)
-    Qform <- paste('Y~', 'A+', cov_terms)
-    print(gform)
-    print(Qform)
-    r <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-              A = df[['azithromycin_indicator']],
-              W = df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator, azithromycin_indicator)),
-              gform = gform,
-              Qform = Qform,
-              family = 'binomial')
-    
-    print(summary(r))
-    # print EY1, EY0
-    EY1 <- mean(r$Qstar[, "Q1W"])
-    EY0 <- mean(r$Qstar[, 'Q0W'])
-    cat('EY1: ', EY1, '\n')
-    cat('EY0: ', EY0, '\n')
-}
-
-#################################################
-## Global imports and functions included below ##
-#################################################
-
-library(tmle)
-library(dplyr)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.9a9592db-2fbe-4177-8581-50b660d3d6b6"),
-    clean_negative_outcome=Input(rid="ri.vector.main.execute.5905c8d9-9ada-4299-b6cb-d3224e2099b6")
-)
-# tmle_R (b04c2f21-2d8e-4970-8a67-bd6adb19abbf): v14
-model_negative_outcome <- function(clean_negative_outcome) {
-    df <- clean_negative_outcome
-    # include all the covariates
-    cov_names <- colnames(df)
-    cov_names <- cov_names[!cov_names %in% c('SSRI_Indicator', 'fracture_indicator')]
-    cov_terms <- paste0(cov_names, collapse='+')
-    gform <- paste0('A~', cov_terms)
-    Qform <- paste('Y~', 'A+', cov_terms)
-    print(gform)
-    print(Qform)
-    SL.library = c("SL.glm", "tmle.SL.dbarts2", "SL.glmnet", "SL.xgboost", "SL.caret", "SL.caret.rpart", "SL.knn", "SL.nnet", "SL.randomForest", "SL.rpart") 
-    r <- tmle(Y = df[['fracture_indicator']],
+    fit <- tmle(Y = df[['fracture_indicator']],
               A = df[['SSRI_Indicator']],
               W = df %>% dplyr::select(-c(fracture_indicator, SSRI_Indicator)),
               gform = gform,
@@ -347,328 +603,23 @@ model_negative_outcome <- function(clean_negative_outcome) {
               Q.SL.library = SL.library,
               g.SL.library = SL.library,
               family = 'binomial')
-    
-    print(summary(r))
-    # print EY1, EY0
-    EY1 <- mean(r$Qstar[, "Q1W"])
-    EY0 <- mean(r$Qstar[, 'Q0W'])
-    cat('EY1: ', EY1, '\n')
-    cat('EY0: ', EY0, '\n')
-}
+              
+    print(summary(fit))
+    g1W <- fit$g$g1W
+    hist(g1W)
+    n <- length(g1W)
+    alpha <- 5/sqrt(n)/log(n)
+    prop <- sum((g1W < alpha) | (g1W > (1-alpha))) / n
+    print(prop)
 
-#################################################
-## Global imports and functions included below ##
-#################################################
+    tmle_r <- get_tmle_est(fit)
+    # change the column name to A and Y
+    df <- df %>% rename(A = SSRI_Indicator, Y = fracture_indicator)
 
-library(tmle)
-library(dplyr)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.dd7a6166-f315-4bf0-8aba-0ee16deecce8"),
-    clean_and_impute=Input(rid="ri.foundry.main.dataset.2fad38c1-ae0b-496a-98a7-4abc4296f18a")
-)
-# tmle_R (b04c2f21-2d8e-4970-8a67-bd6adb19abbf): v14
-model_pooled <- function(clean_and_impute) {
-    df <- clean_and_impute
-    # include all the covariates
-    cov_names <- colnames(df)
-    cov_names <- cov_names[!cov_names %in% c('SSRI_Indicator', 'Long_COVID_diagnosis_post_covid_indicator')]
-    cov_terms <- paste0(cov_names, collapse='+')
-    gform <- paste0('A~', cov_terms)
-    Qform <- paste('Y~', 'A+', cov_terms)
-    print(gform)
-    print(Qform)
-    SL.library = c("SL.glm", "tmle.SL.dbarts2", "SL.glmnet", "SL.xgboost", "SL.caret", "SL.caret.rpart", "SL.knn", "SL.nnet", "SL.randomForest", "SL.rpart") 
-    r <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-              A = df[['SSRI_Indicator']],
-              W = df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator, SSRI_Indicator)),
-              gform = gform,
-              Qform = Qform,
-              Q.SL.library = SL.library,
-              g.SL.library = SL.library,
-              family = 'binomial')
-    
-    print(summary(r))
-    # print EY1, EY0
-    EY1 <- mean(r$Qstar[, "Q1W"])
-    EY0 <- mean(r$Qstar[, 'Q0W'])
-    cat('EY1: ', EY1, '\n')
-    cat('EY0: ', EY0, '\n')
-}
-
-#################################################
-## Global imports and functions included below ##
-#################################################
-
-library(tmle)
-library(dplyr)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.bf6be856-7cec-4588-ba59-9aed95d272e5"),
-    clean_and_impute=Input(rid="ri.foundry.main.dataset.2fad38c1-ae0b-496a-98a7-4abc4296f18a")
-)
-# tmle_R (b04c2f21-2d8e-4970-8a67-bd6adb19abbf): v13
-test <- function(clean_and_impute) {
-    df <- clean_and_impute
-    # include all the covariates
-    cov_names <- colnames(df)
-    cov_names <- cov_names[!cov_names %in% c('SSRI_Indicator', 'Long_COVID_diagnosis_post_covid_indicator')]
-    cov_terms <- paste0(cov_names, collapse='+')
-    gform <- paste0('A~', cov_terms)
-    Qform <- paste('Y~', 'A+', cov_terms)
-    print(gform)
-    print(Qform)
-    SL.library = c("SL.glm", "tmle.SL.dbarts2", "SL.glmnet", "SL.xgboost", "SL.caret", "SL.caret.rpart", "SL.knn", "SL.nnet", "SL.randomForest", "SL.rpart") 
-    r <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-              A = df[['SSRI_Indicator']],
-              W = df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator, SSRI_Indicator)),
-              gform = gform,
-              Qform = Qform,
-              family = 'binomial')
-    
-    print(summary(r))
-    # print EY1, EY0
-    EY1 <- mean(r$Qstar[, "Q1W"])
-    EY0 <- mean(r$Qstar[, 'Q0W'])
-    cat('EY1: ', EY1, '\n')
-    cat('EY0: ', EY0, '\n')
-}
-
-#################################################
-## Global imports and functions included below ##
-#################################################
-
-library(tmle)
-library(dplyr)
-
-@transform_pandas(
-    Output(rid="ri.vector.main.execute.2a37dc17-a2e8-4e75-8d89-54eefed84ae5"),
-    drug_type_cleaned=Input(rid="ri.foundry.main.dataset.aa9a922b-6cc2-48b5-a538-3d56029bd395")
-)
-test_fluoxetine <- function(drug_type_cleaned) {
-    df <- drug_type_cleaned
-    exposure <- 'fluoxetine_indicator'
-    drug_types <- c('fluoxetine_indicator', 'sertraline_indicator', 'paroxetine_indicator', 'fluvoxamine_indicator', 'citalopram_indicator', 'vilazodone_indicator', 'escitalopram_indicator')
-
-    df <- df %>% filter(.[[exposure]] == 1 | SSRI_Indicator == 0)
-    df_W <- df %>% select(-drug_types) %>% select(-c('SSRI_Indicator', 'Long_COVID_diagnosis_post_covid_indicator'))
-    gform <- "A~"
-    Qform <- "Y~"
-    cov_names <- colnames(df_W)
-    for(i in 1:length(cov_names)){
-        x <- cov_names[i]
-        if (i==1){
-            gform <- paste0(gform, x)
-            Qform <- paste0(Qform, x)
-        }else{
-            gform <- paste(gform, x, sep='+')
-            Qform <- paste(Qform, x, sep='+')
-        }
+    v_subs <- var_robust_logRR(df, fit)$est
+    v_iter_new <- var_robust_logRR(df, fit, update='iterative')$est
+    v_one_new <- var_robust_logRR(df, fit, update='one-step')$est
         
-    }
-    Qform <- paste(Qform, 'A', sep='+')
-
-    r <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-        A = df[[exposure]],
-        W = df_W,
-        gform = gform,
-        Qform = Qform,
-        family = 'binomial',
-        cvQinit = FALSE,
-        prescreenW.g = TRUE
-        )
-
-    print(summary(r)) 
-
-    r_cc <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-        A = df[[exposure]],
-        W = df_W,
-        gform = gform,
-        Qform = Qform,
-        family = 'binomial',
-        cvQinit = FALSE,
-        prescreenW.g = TRUE,
-        target.gwt = FALSE
-        )
-
-    print(summary(r_cc))
-
-}
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.317e8eec-d2ba-438b-af11-8a0778c4d805"),
-    clean_and_impute=Input(rid="ri.foundry.main.dataset.2fad38c1-ae0b-496a-98a7-4abc4296f18a")
-)
-vim <- function(clean_and_impute) {
-    df <- clean_and_impute
-    n <- nrow(df)
-    df_W <- df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator, SSRI_Indicator))
-    W_nodes <- colnames(df_W)
-    print("Start Fitting")
-    vim_fit <- est_tmle(df, W_nodes)
-    RR <- vim_fit$estimates$RR
-    print('Running full model')
-    full_estimates <- c("FULL", RR$psi, RR$CI, RR$pvalue, 0, NULL, 1)
-    full_psi <- RR$psi
-    full_se <- abs(RR$CI[1] - RR$psi)/1.96
-    print(full_estimates)
-
-    all_estimates <- foreach::foreach(vim_W = W_nodes) %do% {
-        W_nodes_subset <- setdiff(W_nodes, vim_W)
-        vim_fit <- est_tmle(df, W_nodes_subset)
-        RR <- vim_fit$estimates$RR
-        se <- abs(RR$CI[1]-RR$psi)/1.96
-        diff <- full_psi - RR$psi
-        test <- t.test.sample(full_psi, RR$psi, full_se, se, n, n)
-        estimates <- c(vim_W, RR$psi, RR$CI, RR$pvalue, diff, test[1], test[2])
-        print(estimates)
-        estimates
-  }
-    results <- transpose(as.data.frame(all_estimates))
-    rownames(results) <- NULL
-    colnames(results) <- c('feature', 'psi', 'lower', 'upper', 'p_value', 'psi_diff', 't_statistics', 'p_value_diff')
-    results <- rbind(full_estimates, results)
-    results <- lapply(results[, 2:ncol(results)], as.numeric)
-    return(results)
-}
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.2096ca87-1603-4e36-a3ca-e01aa70e39ac"),
-    clean_and_impute=Input(rid="ri.foundry.main.dataset.2fad38c1-ae0b-496a-98a7-4abc4296f18a")
-)
-# vim_set (2a3fa8a6-305e-458d-80bd-e699b8ab5c6d): v7
-vim_comorbidities <- function(clean_and_impute) {
-    df <- clean_and_impute
-    n <- nrow(df)
-    df_W <- df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator,SSRI_Indicator))
-    W_nodes <- colnames(df_W)
-    full_psi <- 0.901018711879392
-    full_se <- abs(0.860659442450839 - full_psi)/1.96
-
-    # exclude groups of covariates
-    excluded_cov <- c("BMI_max_observed_or_calculated_before_or_day_of_covid","CHRONICLUNGDISEASE_before_or_day_of_covid_indicator","DIABETESUNCOMPLICATED_before_or_day_of_covid_indicator","DIABETESCOMPLICATED_before_or_day_of_covid_indicator","OBESITY_before_or_day_of_covid_indicator","OTHERIMMUNOCOMPROMISED_before_or_day_of_covid_indicator,","TOBACCOSMOKER_before_or_day_of_covid_indicator","SYSTEMICCORTICOSTEROIDS_before_or_day_of_covid_indicator","HYPERTENSION_before_or_day_of_covid_indicator","number_of_COVID_vaccine_doses_before_or_day_of_covid")
-    W_nodes_subset <- setdiff(W_nodes, excluded_cov)
-    print(length(W_nodes_subset))
-
-    # fit tmle with subset covariates
-    vim_fit <- est_tmle(df, W_nodes_subset)
-    RR <- vim_fit$estimates$RR
-    se <- abs(RR$CI[1]-RR$psi)/1.96
-    diff <- full_psi - RR$psi
-    test <- t.test.sample(full_psi, RR$psi, full_se, se, n, n)
-    estimates <- c('comorbidity', RR$psi, RR$CI, RR$pvalue, diff, test[1], test[2])
-    print(estimates)
-#   vim_results <- rbind(all_estimates, full_estimates)
-    results <- transpose(as.data.frame(estimates))
-    rownames(results) <- NULL
-    colnames(results) <- c('feature', 'psi', 'lower', 'upper', 'p_value', 'psi_diff', 't_statistics', 'p_value_diff')
-    return(results)
-}
-
-#################################################
-## Global imports and functions included below ##
-#################################################
-
-library(tmle)
-library(dplyr)
-library(foreach)
-library(data.table)
-
-est_tmle <- function(df, W_nodes) {
-    # include all the covariates
-    gform <- "A~"
-    Qform <- "Y~"
-    for(i in 1:length(W_nodes)){
-        x <- W_nodes[i]
-        if(x!='SSRI_Indicator' & x!='Long_COVID_diagnosis_post_covid_indicator'){
-            if (i==1){
-                gform <- paste0(gform, x)
-                Qform <- paste0(Qform, x)
-            }else{
-                gform <- paste(gform, x, sep='+')
-                Qform <- paste(Qform, x, sep='+')
-            }
-        }
-    }
-    Qform <- paste(Qform, 'A', sep='+')
-    fit <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-              A = df[['SSRI_Indicator']],
-              W = df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator, SSRI_Indicator)),
-              gform = gform,
-              Qform = Qform,
-              family = 'binomial',
-              cvQinit = FALSE)
-
-    return(fit)
-}
-
-@transform_pandas(
-    Output(rid="ri.foundry.main.dataset.f6e938e9-bb0c-4ccf-bf3e-25d5da9108ce"),
-    clean_and_impute=Input(rid="ri.foundry.main.dataset.2fad38c1-ae0b-496a-98a7-4abc4296f18a")
-)
-# vim_set (2a3fa8a6-305e-458d-80bd-e699b8ab5c6d): v7
-vim_medical <- function(clean_and_impute) {
-    df <- clean_and_impute
-    n <- nrow(df)
-    df_W <- df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator,SSRI_Indicator))
-    W_nodes <- colnames(df_W)
-    full_psi <- 0.901018711879392
-    full_se <- abs(0.860659442450839 - full_psi)/1.96
-
-    # exclude groups of covariates
-    excluded_cov <- c("visits_per_month","post_COVID_visit_indicator","number_of_visits_before_covid")
-    W_nodes_subset <- setdiff(W_nodes, excluded_cov)
-    print(length(W_nodes_subset))
-
-    # fit tmle with subset covariates
-    vim_fit <- est_tmle(df, W_nodes_subset)
-    RR <- vim_fit$estimates$RR
-    se <- abs(RR$CI[1]-RR$psi)/1.96
-    diff <- full_psi - RR$psi
-    test <- t.test.sample(full_psi, RR$psi, full_se, se, n, n)
-    estimates <- c('medical', RR$psi, RR$CI, RR$pvalue, diff, test[1], test[2])
-    print(estimates)
-#   vim_results <- rbind(all_estimates, full_estimates)
-    results <- transpose(as.data.frame(estimates))
-    rownames(results) <- NULL
-    colnames(results) <- c('feature', 'psi', 'lower', 'upper', 'p_value', 'psi_diff', 't_statistics', 'p_value_diff')
-    return(results)
-}
-
-#################################################
-## Global imports and functions included below ##
-#################################################
-
-library(tmle)
-library(dplyr)
-library(foreach)
-library(data.table)
-
-est_tmle <- function(df, W_nodes) {
-    # include all the covariates
-    gform <- "A~"
-    Qform <- "Y~"
-    for(i in 1:length(W_nodes)){
-        x <- W_nodes[i]
-        if(x!='SSRI_Indicator' & x!='Long_COVID_diagnosis_post_covid_indicator'){
-            if (i==1){
-                gform <- paste0(gform, x)
-                Qform <- paste0(Qform, x)
-            }else{
-                gform <- paste(gform, x, sep='+')
-                Qform <- paste(Qform, x, sep='+')
-            }
-        }
-    }
-    Qform <- paste(Qform, 'A', sep='+')
-    fit <- tmle(Y = df[['Long_COVID_diagnosis_post_covid_indicator']],
-              A = df[['SSRI_Indicator']],
-              W = df %>% dplyr::select(-c(Long_COVID_diagnosis_post_covid_indicator, SSRI_Indicator)),
-              gform = gform,
-              Qform = Qform,
-              family = 'binomial',
-              cvQinit = FALSE)
-
-    return(fit)
+    print(c(tmle_r[1], tmle_r[2], v_subs, v_iter_new, v_one_new))   
 }
 
